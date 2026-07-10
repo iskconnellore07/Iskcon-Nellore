@@ -1,0 +1,110 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+      );
+    }
+
+    function isSevaka() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sevakas' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+      );
+    }
+
+    // USERS COLLECTION
+    // super_admin can do anything. admin can only create/edit lower roles.
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || 
+                   (isAdmin() && request.resource.data.role in ['sevakas', 'devotees', 'media_team']);
+    }
+
+    // DEVOTEES COLLECTION
+    // Admin and Sevakas can read.
+    // Only Admin (and super_admin) can write.
+    match /devotees/{devoteeId} {
+      allow read: if isSevaka();
+      allow write: if isAdmin();
+    }
+
+    // GALLERY COLLECTION (Photos)
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow create, update: if isSevaka();
+      allow delete: if isAdmin() || (isSevaka() && resource.data.uploadedBy == request.auth.uid);
+    }
+
+    // VIDEOS COLLECTION
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create, update: if isSevaka();
+      allow delete: if isAdmin() || (isSevaka() && resource.data.uploadedBy == request.auth.uid);
+    }
+    
+    // FESTIVALS / CALENDAR COLLECTION
+    match /festivals/{festivalId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // COURSES COLLECTION
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // BIRTHDAY LOGS COLLECTION
+    match /birthdayLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // CUSTOM FORMS COLLECTION
+    match /custom_forms/{formId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // FORM RESPONSES COLLECTION
+    match /form_responses/{responseId} {
+      allow read, delete: if isAuthenticated();
+      allow create: if true; // Public can submit
+      allow update: if false;
+    }
+    
+    // AUDIT LOGS COLLECTION
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create, delete: if isAuthenticated();
+      allow update: if false;
+    }
+    
+    // ACCOMMODATION ROOMS
+    match /accommodation_rooms/{roomId} {
+      allow read: if true;
+      allow create, update: if isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ACCOMMODATION BOOKINGS
+    match /accommodation_bookings/{bookingId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if true;
+    }
+  }
+}

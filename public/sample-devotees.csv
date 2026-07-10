@@ -1,0 +1,11 @@
+Name,Phone,Email,Birthday,Anniversary,Donation Day,Donation Amount,Status
+राम कुमार,+919876543210,ram.kumar@example.com,1985-05-15,2010-08-20,25,500,active
+गीता शर्मा,+918765432109,gita.sharma@example.com,1990-03-22,2015-06-10,15,1000,active
+प्रिया वर्मा,+917654321098,priya.v@example.com,1988-07-30,2012-09-14,10,750,active
+अमित पटेल,+916543210987,amit.patel@example.com,1992-01-12,2018-02-28,20,600,active
+अंजली सिंह,+915432109876,anjali.singh@example.com,1987-11-05,2011-12-25,5,800,active
+विजय शर्मा,+914321098765,vijay.sharma@example.com,1983-04-18,2008-05-20,30,1200,active
+रीता राव,+913210987654,rita.rao@example.com,1991-09-27,2016-10-08,12,550,active
+संजय कुलकर्णी,+912109876543,sanjay.k@example.com,1986-02-14,2009-03-21,18,700,inactive
+पूजा मिश्रा,+911098765432,pooja.mishra@example.com,1993-06-10,2017-07-15,22,650,active
+दीप्ति गुप्ता,+919988776655,deepti.gupta@example.com,1989-12-01,2013-11-30,8,900,paused

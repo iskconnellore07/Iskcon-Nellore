@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "name": "Anand Susmitha",
+    "age": 28,
+    "email": "anand.k@example.com",
+    "birthday": "1994-02-08",
+    "phone_number": "+91-7842557205"
+  },
+  {
+    "id": 2,
+    "name": "Susmitha",
+    "age": 27,
+    "email": "susmitha.r@example.com",
+    "birthday": "1999-05-14",
+    "phone_number": "+11234560002"
+  },
+  {
+    "id": 3,
+    "name": "Priya Devi",
+    "age": 30,
+    "email": "priya.d@example.com",
+    "birthday": "1996-02-06",
+    "phone_number": "+11234560003"
+  },
+  {
+    "id": 4,
+    "name": "Rohan Sharma",
+    "age": 35,
+    "email": "rohan.s@example.com",
+    "birthday": "1989-11-23",
+    "phone_number": "+11234560004"
+  },
+  {
+    "id": 5,
+    "name": "Meera Patel",
+    "age": 22,
+    "email": "meera.p@example.com",
+    "birthday": "2002-07-30",
+    "phone_number": "+11234560005"
+  },
+  {
+    "id": 6,
+    "name": "Vikram Singh",
+    "age": 41,
+    "email": "vikram.s@example.com",
+    "birthday": "1984-02-06",
+    "phone_number": "+11234560006"
+  },
+  {
+    "id": 7,
+    "name": "Lakshmi Nair",
+    "age": 33,
+    "email": "lakshmi.n@example.com",
+    "birthday": "1992-08-12",
+    "phone_number": "+11234560007"
+  },
+  {
+    "id": 8,
+    "name": "Arjun Verma",
+    "age": 26,
+    "email": "arjun.v@example.com",
+    "birthday": "2000-12-01",
+    "phone_number": "+11234560008"
+  },
+  {
+    "id": 9,
+    "name": "Sana Khan",
+    "age": 29,
+    "email": "sana.k@example.com",
+    "birthday": "1997-02-06",
+    "phone_number": "+11234560009"
+  },
+  {
+    "id": 10,
+    "name": "Kabir Ahmed",
+    "age": 38,
+    "email": "kabir.a@example.com",
+    "birthday": "1988-09-17",
+    "phone_number": "+11234560010"
+  },
+  {
+    "id": 11,
+    "name": "Nisha Gupta",
+    "age": 31,
+    "email": "nisha.g@example.com",
+    "birthday": "1994-02-06",
+    "phone_number": "+11234560011"
+  },
+  {
+    "id": 12,
+    "name": "Amit Joshi",
+    "age": 45,
+    "email": "amit.j@example.com",
+    "birthday": "1979-03-03",
+    "phone_number": "+11234560012"
+  },
+  {
+    "id": 13,
+    "name": "Suresh Patil",
+    "age": 52,
+    "email": "suresh.p@example.com",
+    "birthday": "1974-07-19",
+    "phone_number": "+11234560013"
+  },
+  {
+    "id": 14,
+    "name": "Divya Menon",
+    "age": 24,
+    "email": "divya.m@example.com",
+    "birthday": "2000-02-06",
+    "phone_number": "+11234560014"
+  },
+  {
+    "id": 15,
+    "name": "Aravind Rao",
+    "age": 36,
+    "email": "aravind.r@example.com",
+    "birthday": "1989-06-05",
+    "phone_number": "+11234560015"
+  },
+  {
+    "id": 16,
+    "name": "Kavita Sharma",
+    "age": 39,
+    "email": "kavita.s@example.com",
+    "birthday": "1986-10-02",
+    "phone_number": "+11234560016"
+  },
+  {
+    "id": 17,
+    "name": "Manoj Kumar",
+    "age": 47,
+    "email": "manoj.k@example.com",
+    "birthday": "1979-02-06",
+    "phone_number": "+11234560017"
+  },
+  {
+    "id": 18,
+    "name": "Shreya Iyer",
+    "age": 28,
+    "email": "shreya.i@example.com",
+    "birthday": "1998-04-21",
+    "phone_number": "+11234560018"
+  },
+  {
+    "id": 19,
+    "name": "Rakesh Kapoor",
+    "age": 60,
+    "email": "rakesh.k@example.com",
+    "birthday": "1966-02-06",
+    "phone_number": "+11234560019"
+  },
+  {
+    "id": 20,
+    "name": "Pooja Desai",
+    "age": 27,
+    "email": "pooja.d@example.com",
+    "birthday": "1999-01-11",
+    "phone_number": "+11234560020"
+  }
+]

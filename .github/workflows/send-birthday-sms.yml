@@ -1,0 +1,56 @@
+name: Send Birthday SMS
+
+on:
+  schedule:
+    # Runs daily at 06:00 IST -> 00:30 UTC
+    - cron: '30 0 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: send-birthday-sms
+  cancel-in-progress: true
+
+jobs:
+  send-sms:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TWILIO_SID: ${{ secrets.TWILIO_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Self-check (sample run)
+        run: |
+          echo "Running sample self-check (no real SMS will be sent)"
+          node ./scripts/sendBirthdaySms.mjs --sample --send-id=1 --message="Self-check%20run"
+
+      - name: Verify secrets are configured
+        shell: bash
+        run: |
+          missing=false
+          for var in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY TWILIO_SID TWILIO_AUTH_TOKEN TWILIO_FROM; do
+            if [ -z "${!var}" ]; then
+              echo "ERROR: $var is not set"
+              missing=true
+            fi
+          done
+          if [ "$missing" = true ]; then
+            echo "One or more required secrets are missing. Aborting real send step."
+            exit 1
+          fi
+
+      - name: Run birthday SMS script (real)
+        run: |
+          echo "Running real send job — SMS will be dispatched to today's birthday recipients"
+          node ./scripts/sendBirthdaySms.mjs

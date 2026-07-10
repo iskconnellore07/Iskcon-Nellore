@@ -1,0 +1,331 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+require('dotenv').config();
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+const PORT = process.env.PORT || 4000;
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const razorpay = razorpayKeyId && razorpayKeySecret ? new Razorpay({
+  key_id: razorpayKeyId,
+  key_secret: razorpayKeySecret,
+}) : null;
+
+// In-memory orders store for demo/testing
+const orders = {};
+
+// Helper function to send SMS via MSG91 Flow API
+async function sendMsg91SMS(templateId, mobile, variables) {
+  const authKey = process.env.MSG91_AUTH_KEY;
+  if (!authKey) {
+    console.log('MSG91_AUTH_KEY not configured. Skipping SMS.');
+    return;
+  }
+  
+  // Clean phone number and ensure it starts with country code (91)
+  let cleanMobile = mobile.replace(/\D/g, '');
+  if (cleanMobile.length === 10) cleanMobile = `91${cleanMobile}`;
+
+  const options = {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      authkey: authKey
+    },
+    body: JSON.stringify({
+      template_id: templateId,
+      short_url: '1',
+      recipients: [
+        {
+          mobiles: cleanMobile,
+          ...variables
+        }
+      ]
+    })
+  };
+
+  try {
+    const res = await fetch('https://control.msg91.com/api/v5/flow', options);
+    const data = await res.json();
+    console.log(`MSG91 SMS sent to ${cleanMobile}. Template: ${templateId}. Response:`, data);
+  } catch (error) {
+    console.error(`Error sending MSG91 SMS to ${cleanMobile}:`, error);
+  }
+}
+
+app.get('/', (req, res) => {
+  res.json({ ok: true, message: 'Payment test server running' });
+});
+
+// Create an order with Razorpay
+app.post('/create-order', async (req, res) => {
+  if (!razorpay) {
+    return res.status(500).json({ error: 'Payment gateway not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.' });
+  }
+
+  const { name, phone, mobile, email, festival, date, slot, people, amount, claim80G, pan, address } = req.body;
+  const phoneNumber = phone || mobile;
+  const amountNumber = Number(amount);
+  if (!amountNumber || amountNumber <= 0) {
+    return res.status(400).json({ error: 'Valid amount required.' });
+  }
+
+  const amountPaise = Math.round(amountNumber * 100);
+
+  try {
+    const orderOptions = {
+      amount: amountPaise,
+      currency: 'INR',
+      receipt: `donation_${Date.now()}`,
+      notes: {
+        name: name || '',
+        phone: phoneNumber || '',
+        email: email || '',
+        festival: festival || '',
+        date: date || '',
+        slot: slot || '',
+        people: people || '',
+      },
+    };
+
+    if (process.env.ISKCON_ACCOUNT_ID) {
+      orderOptions.transfers = [
+        {
+          account: process.env.ISKCON_ACCOUNT_ID,
+          amount: amountPaise,
+          currency: 'INR',
+          notes: {
+            name: name || 'Devotee',
+            email: email || '',
+          },
+          linked_account_notes: ['name', 'email'],
+          on_hold: 0,
+        },
+      ];
+    }
+
+    const order = await razorpay.orders.create(orderOptions);
+
+    orders[order.id] = {
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      name: name || 'Devotee',
+      phone: phoneNumber,
+      email,
+      festival,
+      date,
+      slot,
+      people,
+      claim80G,
+      pan,
+      address,
+      paid: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    res.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: razorpayKeyId,
+      amountInRupees: amountNumber,
+    });
+  } catch (err) {
+    console.error('Error creating Razorpay order', err);
+    res.status(500).json({ error: 'Unable to create payment order.' });
+  }
+});
+
+// Verify payment signature and mark the order paid
+app.post('/verify-payment', (req, res) => {
+  console.log('--- verify-payment called ---');
+  console.log('Body:', req.body);
+  if (!razorpay) {
+    return res.status(500).json({ success: false, message: 'Payment gateway not configured.' });
+  }
+
+  const { orderId, paymentId, signature } = req.body;
+  if (!orderId || !paymentId || !signature) {
+    return res.status(400).json({ success: false, message: 'Missing payment details.' });
+  }
+
+  const order = orders[orderId];
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found.' });
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', razorpayKeySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+
+  if (expectedSignature !== signature) {
+    return res.status(400).json({ success: false, message: 'Invalid payment signature.' });
+  }
+
+  order.paid = true;
+  order.paymentId = paymentId;
+  order.signature = signature;
+  order.paidAt = new Date().toISOString();
+
+  if (process.env.GOOGLE_APPS_SCRIPT_URL) {
+    fetch(process.env.GOOGLE_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: order.festival ? 'Festivals' : 'Donation',
+        name: order.name,
+        email: order.email || '',
+        phone: order.phone || '',
+        amount: order.amount / 100,
+        date: order.date || order.paidAt,
+        paymentId: paymentId,
+        orderId: orderId,
+        festival: order.festival || '',
+        slot: order.slot || '',
+        people: order.people || '',
+        pan: order.pan || '',
+        address: order.address || '',
+        claim80G: order.claim80G ? true : false
+      })
+    }).catch(err => console.error("Error sending to Apps Script:", err));
+  }
+
+  // --- Send MSG91 SMS Confirmation ---
+  if (order.phone) {
+    if (order.festival) {
+      // Festival Booking Ticket
+      sendMsg91SMS('6a44c3bee9bec73631098c22', order.phone, {
+        alphanumeric: order.name, // The first variable in DLT
+        name: order.name, // In case mapped in MSG91 as ##name##
+        festival: order.festival,
+        date: order.date || new Date().toLocaleDateString(),
+        ticket: orderId.substring(orderId.length - 6).toUpperCase(),
+        url: 'https://iskconnellore.com'
+      });
+    } else {
+      // General Donation Receipt
+      sendMsg91SMS('6a44c3ef034572e8e305b062', order.phone, {
+        alphanumeric: order.name, // First var
+        name: order.name,
+        numeric: (order.amount / 100).toString(),
+        amount: (order.amount / 100).toString(),
+        url: 'https://iskconnellore.com'
+      });
+    }
+  }
+
+  console.log('Verify success for order:', orderId);
+  res.json({ success: true, order });
+});
+
+app.post('/submit-contact', (req, res) => {
+  const { name, email, phone, message } = req.body;
+  if (process.env.GOOGLE_APPS_SCRIPT_URL) {
+    fetch(process.env.GOOGLE_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Contact',
+        name: name || '',
+        email: email || '',
+        phone: phone || '',
+        message: message || '',
+        date: new Date().toISOString()
+      })
+    }).catch(err => console.error("Error sending Contact to Apps Script:", err));
+  }
+  res.json({ success: true });
+});
+
+app.get('/orders/:id', (req, res) => {
+  const id = req.params.id;
+  const order = orders[id];
+  if (!order) return res.status(404).json({ error: 'not found' });
+  res.json(order);
+});
+
+// --- ADMIN USER CREATION ---
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabaseAdmin = null;
+
+if (supabaseUrl && supabaseServiceKey) {
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
+app.post('/create-admin-user', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Supabase admin client not configured on server.' });
+  }
+
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true // Auto-confirm the admin user so they can login immediately
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ success: true, user: data.user });
+  } catch (err) {
+    console.error('Error creating user:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// --- DASHBOARD STATS (From Google Sheets) ---
+app.get('/dashboard-stats', async (req, res) => {
+  const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+  if (!scriptUrl) {
+    return res.status(500).json({ error: 'Google Apps Script URL not configured.' });
+  }
+
+  try {
+    const response = await fetch(scriptUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from sheets: ${response.statusText}`);
+    }
+    const textData = await response.text();
+    
+    // Check if the response is HTML (meaning the script is returning an error page instead of JSON)
+    if (textData.trim().startsWith('<')) {
+      throw new Error('Google Apps Script returned an HTML error page. Make sure the doGet function is deployed correctly.');
+    }
+
+    const data = JSON.parse(textData);
+    res.json(data);
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Payment Server listening on http://localhost:${PORT}`);
+  console.log(`💳 Razorpay Status: ${razorpay ? '✅ Configured' : '⚠️ Not Configured'}`);
+  console.log(`📱 MSG91 Status: ${process.env.MSG91_AUTH_KEY ? '✅ Configured' : '⚠️ Not Configured'}`);
+  console.log(`🎂 Birthday Scheduler: Starting...`);
+});

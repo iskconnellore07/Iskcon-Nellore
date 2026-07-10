@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSevaka() {
+      // In Storage rules we can't easily fetch Firestore documents without custom claims.
+      // For this Spark Plan implementation, we'll ensure UI only exposes upload to Sevakas.
+      // For backend rule, we just restrict to authenticated users.
+      // A more robust way (if using Blaze) would be Custom Claims.
+      return isAuthenticated(); 
+    }
+
+    // GALLERY (Photos)
+    // Anyone can view
+    // Authenticated users (Sevakas/Admins) can upload/delete
+    // Max size 5MB for images
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow write: if isSevaka() 
+                   && (request.resource == null || request.resource.size < 5 * 1024 * 1024)
+                   && (request.resource == null || request.resource.contentType.matches('image/.*'));
+    }
+
+    // VIDEOS
+    // Anyone can view
+    // Authenticated users (Sevakas/Admins) can upload/delete
+    // Max size 50MB for short 1-5 min videos
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if isSevaka()
+                   && (request.resource == null || request.resource.size < 50 * 1024 * 1024)
+                   && (request.resource == null || request.resource.contentType.matches('video/.*'));
+    }
+
+    // FESTIVALS
+    match /festivals/{imageId} {
+      allow read: if true;
+      allow write: if isSevaka()
+                   && (request.resource == null || request.resource.size < 5 * 1024 * 1024);
+    }
+  }
+}
