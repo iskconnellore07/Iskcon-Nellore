@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { logAudit } from "@/lib/audit";
+import logo from "@/assets/iskcon_logo.avif";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -57,7 +58,7 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <img src="/src/assets/iskcon_logo.avif" alt="ISKCON Logo" className="h-16 w-16" />
+            <img src={logo} alt="ISKCON Logo" className="h-16 w-16 object-contain" />
           </div>
           <CardTitle className="text-2xl text-center font-bold">Admin Portal</CardTitle>
           <CardDescription className="text-center">

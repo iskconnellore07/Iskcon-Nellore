@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { Image as ImageIcon, Video, Heart, X, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import logo from "@/assets/iskcon_logo.avif";
 
 interface MediaItem {
   id: string;
@@ -94,7 +95,7 @@ export default function Gallery() {
           <div className="flex items-center space-x-4 mb-8">
             <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-orange-400 to-red-500 p-1">
               <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
-                <img src="/src/assets/iskcon_logo.avif" alt="Logo" className="w-10 h-10 object-contain" />
+                <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
               </div>
             </div>
             <div>

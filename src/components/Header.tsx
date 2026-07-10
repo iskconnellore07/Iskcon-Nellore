@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import logo from "@/assets/iskcon_logo.avif";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -154,7 +155,7 @@ const Header = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
              <div className="h-10 w-10 flex items-center justify-center"> 
-              <span className="text-primary-foreground font-bold text-lg"><img src="../../src/assets/iskcon_logo.avif" alt="Logo" /></span>
+              <span className="text-primary-foreground font-bold text-lg"><img src={logo} alt="Logo" className="w-full h-full object-contain" /></span>
              </div> 
             <span className="font-bold text-lg text-foreground hidden sm:inline">ISKCON Nellore</span>
           </Link>
