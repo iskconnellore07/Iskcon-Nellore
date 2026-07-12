@@ -63,8 +63,12 @@ export async function fetchDevotee(id: string) {
   return { id: docSnap.id, ...docSnap.data() } as Devotee;
 }
 
+function removeUndefined(obj: any) {
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
+}
+
 export async function createDevotee(devotee: Omit<Devotee, "id" | "created_at" | "updated_at">) {
-  const data = { ...devotee, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  const data = removeUndefined({ ...devotee, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
   const docRef = await addDoc(collection(db, "devotees"), data);
   const newDevotee = { id: docRef.id, ...data } as Devotee;
   
@@ -74,7 +78,7 @@ export async function createDevotee(devotee: Omit<Devotee, "id" | "created_at" |
 
 export async function updateDevotee(id: string, updates: Partial<Omit<Devotee, "id" | "created_at">>) {
   updates.updated_at = new Date().toISOString();
-  await updateDoc(doc(db, "devotees", id), updates);
+  await updateDoc(doc(db, "devotees", id), removeUndefined(updates));
   
   const updatedDoc = await fetchDevotee(id);
   syncToGoogleSheets(updatedDoc).catch(console.error); // Fire and forget
