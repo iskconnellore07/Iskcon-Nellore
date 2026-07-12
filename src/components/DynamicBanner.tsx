@@ -80,12 +80,14 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
                   loop 
                   muted 
                   playsInline 
+                  onLoadedMetadata={() => api?.reInit()}
                   className="w-full h-auto block"
                 />
               ) : (
                 <img 
                   src={banner.imageUrl}
                   alt={banner.title || "Banner"}
+                  onLoad={() => api?.reInit()}
                   className="w-full h-auto block"
                 />
               )}
