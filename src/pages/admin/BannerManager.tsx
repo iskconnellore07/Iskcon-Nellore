@@ -209,7 +209,6 @@ export default function BannerManager() {
                       placeholder={mediaType === "video" ? "Paste Video URL (e.g. .mp4)" : "Paste Image URL"} 
                     />
                   </div>
-                  </div>
                   <div className="mt-2">
                     <GalleryPicker 
                       onSelect={(items) => {
