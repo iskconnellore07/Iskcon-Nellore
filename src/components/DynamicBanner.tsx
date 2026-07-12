@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Link } from "react-router-dom";
+import AutoHeight from 'embla-carousel-auto-height';
 
 interface Banner {
   id: string;
@@ -15,6 +16,8 @@ interface Banner {
   buttonLink: string;
   mediaType?: "image" | "video";
   location: string;
+  endDate?: string;
+  order: number;
 }
 
 interface DynamicBannerProps {
@@ -65,11 +68,11 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
   }
 
   return (
-    <section className="relative w-full overflow-hidden bg-black">
-      <Carousel setApi={setApi} opts={{ loop: true }} className="w-full">
-        <CarouselContent>
+    <section className="relative w-full overflow-hidden">
+      <Carousel setApi={setApi} opts={{ loop: true }} plugins={[AutoHeight()]} className="w-full">
+        <CarouselContent className="items-start transition-[height] duration-300">
           {banners.map((banner) => (
-            <CarouselItem key={banner.id} className="relative basis-full flex items-center justify-center">
+            <CarouselItem key={banner.id} className="relative basis-full">
               {banner.mediaType === "video" ? (
                 <video 
                   src={banner.imageUrl} 
@@ -77,13 +80,13 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
                   loop 
                   muted 
                   playsInline 
-                  className="w-full max-h-[75vh] object-contain"
+                  className="w-full h-auto block"
                 />
               ) : (
                 <img 
                   src={banner.imageUrl}
                   alt={banner.title || "Banner"}
-                  className="w-full max-h-[75vh] object-contain"
+                  className="w-full h-auto block"
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/70 pointer-events-none" />
