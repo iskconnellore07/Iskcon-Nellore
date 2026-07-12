@@ -203,6 +203,7 @@ export default function BannerManager() {
                 <div className="flex-1 space-y-2">
                   <div className="mt-2">
                     <GalleryPicker 
+                      filterType={mediaType}
                       onSelect={(items) => {
                         if (items.length > 0) {
                           const formatted = items.map(i => ({ 

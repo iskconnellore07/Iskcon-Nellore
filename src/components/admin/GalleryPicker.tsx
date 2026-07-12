@@ -16,9 +16,10 @@ interface MediaItem {
 interface GalleryPickerProps {
   onSelect: (media: { url: string, type: "image" | "video" | "360" }[]) => void;
   maxSelection?: number;
+  filterType?: "image" | "video" | "all";
 }
 
-export function GalleryPicker({ onSelect, maxSelection = 5 }: GalleryPickerProps) {
+export function GalleryPicker({ onSelect, maxSelection = 5, filterType = "all" }: GalleryPickerProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [selected, setSelected] = useState<MediaItem[]>([]);
   const [is360Map, setIs360Map] = useState<Record<string, boolean>>({});
@@ -83,7 +84,7 @@ export function GalleryPicker({ onSelect, maxSelection = 5 }: GalleryPickerProps
           <div className="py-8 text-center">Loading gallery...</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            {media.map(item => {
+            {media.filter(item => filterType === "all" || item.type === filterType).map(item => {
               const isSelected = !!selected.find(s => s.id === item.id);
               return (
                 <div 
