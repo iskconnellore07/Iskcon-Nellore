@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, UploadCloud, Image as ImageIcon, Video } from "lucide-react";
+import { Trash2, UploadCloud, Image as ImageIcon, Video, Copy, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { logAudit } from "@/lib/audit";
@@ -34,6 +34,7 @@ export default function GalleryManager() {
   const [category, setCategory] = useState("General");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [totalStorage, setTotalStorage] = useState(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const MAX_STORAGE = 25 * 1024 * 1024 * 1024; // 25 GB
 
@@ -238,6 +239,17 @@ export default function GalleryManager() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+  const copyToClipboard = async (url: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      toast.success("Image URL copied to clipboard!");
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      toast.error("Failed to copy URL");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -283,6 +295,8 @@ export default function GalleryManager() {
                 >
                   <option value="General">General (Public Gallery)</option>
                   <option value="Accommodation">Accommodation (Rooms Only)</option>
+                  <option value="Daily Darshan">Daily Darshan (Hidden)</option>
+                  <option value="Website Banners">Website Banners (Hidden)</option>
                 </select>
               </div>
 
@@ -352,15 +366,23 @@ export default function GalleryManager() {
                 <video src={item.url} className="w-full h-48 object-cover" controls />
               )}
               <CardContent className="p-4 flex justify-between items-center">
-                <div className="truncate pr-4">
-                  <h3 className="font-semibold truncate">{item.title}</h3>
-                  <p className="text-xs text-gray-500 uppercase">{item.type}</p>
+                <div className="truncate pr-4 flex-1">
+                  <h3 className="font-semibold truncate" title={item.title}>{item.title}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500 uppercase">{item.type}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{item.category || "General"}</span>
+                  </div>
                 </div>
-                {canDelete && (
-                  <Button variant="destructive" size="icon" onClick={() => handleDelete(item)}>
-                    <Trash2 className="w-4 h-4" />
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(item.url, item.id)} title="Copy URL">
+                    {copiedId === item.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </Button>
-                )}
+                  {canDelete && (
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(item)} title="Delete">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
             );
