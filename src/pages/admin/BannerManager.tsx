@@ -16,6 +16,7 @@ interface Banner {
   subtitle: string;
   buttonText: string;
   buttonLink: string;
+  mediaType: "image" | "video";
   order: number;
 }
 
@@ -29,6 +30,7 @@ export default function BannerManager() {
   const [subtitle, setSubtitle] = useState("");
   const [buttonText, setButtonText] = useState("");
   const [buttonLink, setButtonLink] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
 
   useEffect(() => {
     fetchBanners();
@@ -63,6 +65,7 @@ export default function BannerManager() {
         subtitle,
         buttonText,
         buttonLink,
+        mediaType,
         order: newOrder,
         createdAt: serverTimestamp()
       });
@@ -72,6 +75,7 @@ export default function BannerManager() {
       setSubtitle("");
       setButtonText("");
       setButtonLink("");
+      setMediaType("image");
       fetchBanners();
     } catch (error) {
       console.error("Error adding banner:", error);
@@ -134,24 +138,43 @@ export default function BannerManager() {
         <CardContent>
           <form onSubmit={handleAddBanner} className="space-y-4 max-w-2xl">
             <div className="space-y-2">
-              <Label>Banner Image (Required)</Label>
+              <Label>Banner Media (Required)</Label>
               <div className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <Input 
-                    value={imageUrl} 
-                    onChange={e => setImageUrl(e.target.value)} 
-                    placeholder="https://..." 
-                    required 
-                  />
+                <div className="flex-1 space-y-2">
+                  <div className="flex gap-2">
+                    <select 
+                      className="border rounded px-2 py-1 bg-white"
+                      value={mediaType}
+                      onChange={(e) => setMediaType(e.target.value as "image" | "video")}
+                    >
+                      <option value="image">Image URL</option>
+                      <option value="video">Video URL</option>
+                    </select>
+                    <Input 
+                      className="flex-1"
+                      value={imageUrl} 
+                      onChange={e => setImageUrl(e.target.value)} 
+                      placeholder="https://..." 
+                      required 
+                    />
+                  </div>
                   <div className="mt-2">
                     <GalleryPicker 
-                      onSelect={(items) => items.length > 0 && setImageUrl(items[0].url)} 
+                      onSelect={(items) => {
+                        if (items.length > 0) {
+                          setImageUrl(items[0].url);
+                          setMediaType(items[0].type === "video" ? "video" : "image");
+                        }
+                      }} 
                       maxSelection={1} 
                     />
                   </div>
                 </div>
-                {imageUrl && (
+                {imageUrl && mediaType === "image" && (
                   <img src={imageUrl} alt="Preview" className="w-32 h-20 object-cover rounded border" />
+                )}
+                {imageUrl && mediaType === "video" && (
+                  <video src={imageUrl} className="w-32 h-20 object-cover rounded border bg-black" />
                 )}
               </div>
             </div>
@@ -202,7 +225,11 @@ export default function BannerManager() {
                   </Button>
                 </div>
                 
-                <img src={banner.imageUrl} alt="Banner" className="w-48 h-24 object-cover rounded border" />
+                {banner.mediaType === "video" ? (
+                  <video src={banner.imageUrl} className="w-48 h-24 object-cover rounded border bg-black" />
+                ) : (
+                  <img src={banner.imageUrl} alt="Banner" className="w-48 h-24 object-cover rounded border" />
+                )}
                 
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{banner.title || "(No Title)"}</h3>

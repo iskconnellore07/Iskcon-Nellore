@@ -1,17 +1,26 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import heroImage from "@/assets/hero-temple.jpg";
 
 const Goshala = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <section className="bg-primary/5 py-12 md:py-20">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
+        {/* Banner Section */}
+        <section className="relative h-[300px] flex items-center justify-center overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          >
+            <div className="absolute inset-0 bg-black/60" />
+          </div>
+          
+          <div className="relative z-10 container mx-auto px-4 text-center animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-md">
               Sri Krishna Balram Goshala
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-gray-200 max-w-2xl mx-auto drop-shadow-sm">
               Goshalas are protective shelters in India for cows, focusing on treating cows in accordance with Hindu philosophy.
             </p>
           </div>

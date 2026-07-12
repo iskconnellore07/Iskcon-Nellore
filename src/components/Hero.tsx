@@ -14,6 +14,7 @@ interface Banner {
   subtitle: string;
   buttonText: string;
   buttonLink: string;
+  mediaType?: "image" | "video";
 }
 
 const Hero = () => {
@@ -84,12 +85,22 @@ const Hero = () => {
         <CarouselContent className="h-full">
           {banners.map((banner) => (
             <CarouselItem key={banner.id} className="relative h-full basis-full">
-              <div 
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${banner.imageUrl})` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
-              </div>
+              {banner.mediaType === "video" ? (
+                <video 
+                  src={banner.imageUrl} 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div 
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${banner.imageUrl})` }}
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
               
               <div className="relative z-10 container mx-auto px-4 h-full flex flex-col items-center justify-center text-center animate-fade-in">
                 {banner.title && (
