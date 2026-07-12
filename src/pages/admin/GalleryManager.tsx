@@ -295,7 +295,6 @@ export default function GalleryManager() {
                 >
                   <option value="General">General (Public Gallery)</option>
                   <option value="Accommodation">Accommodation (Rooms Only)</option>
-                  <option value="Daily Darshan">Daily Darshan (Hidden)</option>
                   <option value="Website Banners">Website Banners (Hidden)</option>
                 </select>
               </div>
