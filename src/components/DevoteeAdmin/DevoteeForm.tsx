@@ -24,7 +24,7 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
     anniversary: "",
     donation_day_of_month: "",
     donation_amount: "",
-    donation_type: "monthly" as const,
+    donation_type: "yearly" as const,
     status: "active" as const,
     notes: "",
   });
@@ -39,7 +39,7 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
         anniversary: devotee.anniversary || "",
         donation_day_of_month: devotee.donation_day_of_month?.toString() || "",
         donation_amount: devotee.donation_amount?.toString() || "",
-        donation_type: devotee.donation_type || "monthly",
+        donation_type: devotee.donation_type || "yearly",
         status: devotee.status || "active",
         notes: devotee.notes || "",
       });
@@ -77,7 +77,7 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
         anniversary: "",
         donation_day_of_month: "",
         donation_amount: "",
-        donation_type: "monthly",
+        donation_type: "yearly",
         status: "active",
         notes: "",
       });
@@ -193,7 +193,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="yearly">Yearly</SelectItem>
                   <SelectItem value="one-time">One-time</SelectItem>
                 </SelectContent>
