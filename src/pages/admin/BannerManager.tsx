@@ -201,14 +201,6 @@ export default function BannerManager() {
                 </div>
                 
                 <div className="flex-1 space-y-2">
-                  <div className="flex gap-2">
-                    <Input 
-                      className="flex-1"
-                      value={imageUrl} 
-                      onChange={e => setImageUrl(e.target.value)} 
-                      placeholder={mediaType === "video" ? "Paste Video URL (e.g. .mp4 or YouTube)" : "Paste Image URL"} 
-                    />
-                  </div>
                   <div className="mt-2">
                     <GalleryPicker 
                       onSelect={(items) => {
