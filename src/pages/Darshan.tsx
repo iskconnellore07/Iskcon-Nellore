@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Video } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { DynamicBanner } from "@/components/DynamicBanner";
 import darshanImage from "@/assets/darshan-altar.jpg";
 import eventKirtan from "@/assets/event-kirtan.jpg";
 import heroTemple from "@/assets/hero-temple.jpg";
@@ -22,14 +23,22 @@ const Darshan = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <section className="py-12 bg-muted">
+        <DynamicBanner location="darshan">
+          <section className="py-12 bg-muted">
+            <div className="container mx-auto px-4">
+              <div className="max-w-4xl mx-auto">
+                <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">Daily Darshan</h1>
+                <p className="text-lg text-muted-foreground text-center mb-8">
+                  Experience the divine presence of Lord Krishna through daily worship and aarti
+                </p>
+              </div>
+            </div>
+          </section>
+        </DynamicBanner>
+        
+        <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">Daily Darshan</h1>
-              <p className="text-lg text-muted-foreground text-center mb-8">
-                Experience the divine presence of Lord Krishna through daily worship and aarti
-              </p>
-
               <Card className="mb-8">
                 {/* Carousel that fetches images from assets */}
                 <Carousel className="relative">

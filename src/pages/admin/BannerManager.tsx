@@ -17,6 +17,7 @@ interface Banner {
   buttonText: string;
   buttonLink: string;
   mediaType: "image" | "video";
+  location: "home" | "darshan" | "goshala";
   order: number;
 }
 
@@ -31,6 +32,7 @@ export default function BannerManager() {
   const [buttonText, setButtonText] = useState("");
   const [buttonLink, setButtonLink] = useState("");
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [location, setLocation] = useState<"home" | "darshan" | "goshala">("home");
 
   useEffect(() => {
     fetchBanners();
@@ -66,6 +68,7 @@ export default function BannerManager() {
         buttonText,
         buttonLink,
         mediaType,
+        location,
         order: newOrder,
         createdAt: serverTimestamp()
       });
@@ -76,6 +79,7 @@ export default function BannerManager() {
       setButtonText("");
       setButtonLink("");
       setMediaType("image");
+      setLocation("home");
       fetchBanners();
     } catch (error) {
       console.error("Error adding banner:", error);
@@ -137,6 +141,19 @@ export default function BannerManager() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAddBanner} className="space-y-4 max-w-2xl">
+            <div className="space-y-2">
+              <Label>Page Location (Required)</Label>
+              <select 
+                className="w-full border rounded px-3 py-2 bg-white"
+                value={location}
+                onChange={(e) => setLocation(e.target.value as "home" | "darshan" | "goshala")}
+              >
+                <option value="home">Homepage (Main Slideshow)</option>
+                <option value="darshan">Daily Darshan Page</option>
+                <option value="goshala">Goshala Page</option>
+              </select>
+            </div>
+
             <div className="space-y-2">
               <Label>Banner Media (Required)</Label>
               <div className="flex gap-4 items-start">
@@ -232,6 +249,11 @@ export default function BannerManager() {
                 )}
                 
                 <div className="flex-1">
+                  <div className="flex gap-2 items-center mb-1">
+                    <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded font-semibold uppercase tracking-wider">
+                      {banner.location === "home" ? "Homepage" : banner.location === "darshan" ? "Daily Darshan" : "Goshala"}
+                    </span>
+                  </div>
                   <h3 className="font-semibold text-lg">{banner.title || "(No Title)"}</h3>
                   <p className="text-gray-500 text-sm">{banner.subtitle}</p>
                   {banner.buttonText && (

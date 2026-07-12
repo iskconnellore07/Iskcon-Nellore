@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import heroImage from "@/assets/hero-temple.jpg";
 import { Link } from "react-router-dom";
 
 interface Banner {
@@ -15,17 +14,29 @@ interface Banner {
   buttonText: string;
   buttonLink: string;
   mediaType?: "image" | "video";
+  location: string;
 }
 
-const Hero = () => {
+interface DynamicBannerProps {
+  location: "home" | "darshan" | "goshala";
+  children?: React.ReactNode;
+}
+
+export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [api, setApi] = useState<CarouselApi>();
 
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const snapshot = await getDocs(query(collection(db, "website_banners"), orderBy("order", "asc")));
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Banner[];
+        const snapshot = await getDocs(query(collection(db, "website_banners")));
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Banner[];
+        
+        // Filter by location & sort by order manually to avoid composite index requirement
+        data = data
+          .filter(b => b.location === location)
+          .sort((a, b) => a.order - b.order);
+          
         setBanners(data);
       } catch (error) {
         console.error("Failed to fetch banners:", error);
@@ -45,38 +56,8 @@ const Hero = () => {
   }, [api, banners.length]);
 
   if (banners.length === 0) {
-    // Fallback to static hero
-    return (
-      <section className="relative h-[250px] md:h-[300px] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background/90" />
-        </div>
-        
-        <div className="relative z-10 container mx-auto px-4 text-center animate-fade-in">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-            Welcome to ISKCON Nellore
-          </h1>
-          <p className="text-lg md:text-xl mb-8 text-muted-foreground max-w-2xl mx-auto">
-            Experience divine consciousness through devotion, service, and spiritual wisdom. 
-            Join us in our journey of Krishna consciousness.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="lg" asChild>
-              <Link to="/about">
-                Learn More
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg" asChild>
-              <Link to="/darshan">View Schedule</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
+    // Fallback to static hero/header provided by parent
+    return <>{children}</>;
   }
 
   return (
@@ -138,5 +119,3 @@ const Hero = () => {
     </section>
   );
 };
-
-export default Hero;
