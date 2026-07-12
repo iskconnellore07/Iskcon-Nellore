@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import { GalleryPicker } from "@/components/admin/GalleryPicker";
 
 interface Banner {
@@ -18,6 +18,7 @@ interface Banner {
   buttonLink: string;
   mediaType: "image" | "video";
   location: "home" | "darshan" | "goshala";
+  endDate?: string;
   order: number;
 }
 
@@ -33,6 +34,8 @@ export default function BannerManager() {
   const [buttonLink, setButtonLink] = useState("");
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [location, setLocation] = useState<"home" | "darshan" | "goshala">("home");
+  const [endDate, setEndDate] = useState("");
+  const [selectedMedia, setSelectedMedia] = useState<{url: string, type: "image"|"video"}[]>([]);
 
   useEffect(() => {
     fetchBanners();
@@ -54,25 +57,35 @@ export default function BannerManager() {
 
   const handleAddBanner = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageUrl) {
-      toast.error("Please provide an image URL or select from Gallery");
+    if (!imageUrl && selectedMedia.length === 0) {
+      toast.error("Please provide an image URL or select from gallery");
       return;
     }
 
     try {
-      const newOrder = banners.length > 0 ? Math.max(...banners.map(b => b.order)) + 1 : 0;
-      await addDoc(collection(db, "website_banners"), {
-        imageUrl,
-        title,
-        subtitle,
-        buttonText,
-        buttonLink,
-        mediaType,
-        location,
-        order: newOrder,
-        createdAt: serverTimestamp()
-      });
-      toast.success("Banner added successfully!");
+      const highestOrder = banners.length > 0 ? Math.max(...banners.map(b => b.order)) : 0;
+      let currentOrder = highestOrder + 1;
+
+      const itemsToAdd = selectedMedia.length > 0 
+        ? selectedMedia 
+        : [{ url: imageUrl, type: mediaType }];
+
+      for (const item of itemsToAdd) {
+        await addDoc(collection(db, "website_banners"), {
+          imageUrl: item.url,
+          title,
+          subtitle,
+          buttonText,
+          buttonLink,
+          mediaType: item.type,
+          location,
+          endDate: endDate || null,
+          order: currentOrder++,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      toast.success(itemsToAdd.length > 1 ? `${itemsToAdd.length} Banners added successfully!` : "Banner added successfully!");
       setImageUrl("");
       setTitle("");
       setSubtitle("");
@@ -80,6 +93,8 @@ export default function BannerManager() {
       setButtonLink("");
       setMediaType("image");
       setLocation("home");
+      setEndDate("");
+      setSelectedMedia([]);
       fetchBanners();
     } catch (error) {
       console.error("Error adding banner:", error);
@@ -87,8 +102,16 @@ export default function BannerManager() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this banner?")) return;
+  const handleDelete = async (id: string, bannerLocation: string) => {
+    if (!window.confirm("Are you sure you want to delete this banner?")) return;
+    
+    // Prevent deleting the last banner for a location
+    const locationBanners = banners.filter(b => b.location === bannerLocation);
+    if (locationBanners.length <= 1) {
+      toast.error(`You cannot delete this banner. There must be at least one banner for ${bannerLocation}!`);
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, "website_banners", id));
       toast.success("Banner deleted");
@@ -99,28 +122,27 @@ export default function BannerManager() {
     }
   };
 
-  const moveBanner = async (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === banners.length - 1) return;
+  const moveBanner = async (index: number, direction: number) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= banners.length) return;
 
     const newBanners = [...banners];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
     
     // Swap order values
     const tempOrder = newBanners[index].order;
-    newBanners[index].order = newBanners[targetIndex].order;
-    newBanners[targetIndex].order = tempOrder;
+    newBanners[index].order = newBanners[newIndex].order;
+    newBanners[newIndex].order = tempOrder;
 
     // Swap in array for immediate UI update
     const temp = newBanners[index];
-    newBanners[index] = newBanners[targetIndex];
-    newBanners[targetIndex] = temp;
+    newBanners[index] = newBanners[newIndex];
+    newBanners[newIndex] = temp;
     
     setBanners(newBanners);
 
     try {
       await updateDoc(doc(db, "website_banners", newBanners[index].id), { order: newBanners[index].order });
-      await updateDoc(doc(db, "website_banners", newBanners[targetIndex].id), { order: newBanners[targetIndex].order });
+      await updateDoc(doc(db, "website_banners", newBanners[newIndex].id), { order: newBanners[newIndex].order });
     } catch (error) {
       toast.error("Failed to reorder");
       fetchBanners();
@@ -179,15 +201,24 @@ export default function BannerManager() {
                     <GalleryPicker 
                       onSelect={(items) => {
                         if (items.length > 0) {
-                          setImageUrl(items[0].url);
-                          setMediaType(items[0].type === "video" ? "video" : "image");
+                          const formatted = items.map(i => ({ 
+                            url: i.url, 
+                            type: (i.type === "video" ? "video" : "image") as "image"|"video"
+                          }));
+                          setSelectedMedia(formatted);
+                          setImageUrl(formatted[0].url);
+                          setMediaType(formatted[0].type);
                         }
                       }} 
-                      maxSelection={1} 
                     />
+                    {selectedMedia.length > 1 && (
+                      <p className="text-sm text-blue-600 font-medium mt-2">
+                        {selectedMedia.length} files selected (will create {selectedMedia.length} banners)
+                      </p>
+                    )}
                   </div>
                 </div>
-                {imageUrl && mediaType === "image" && (
+                {imageUrl && mediaType === "image" && selectedMedia.length <= 1 && (
                   <img src={imageUrl} alt="Preview" className="w-32 h-20 object-cover rounded border" />
                 )}
                 {imageUrl && mediaType === "video" && (
@@ -218,7 +249,18 @@ export default function BannerManager() {
               </div>
             </div>
 
-            <Button type="submit">Add Banner</Button>
+            <div className="space-y-2">
+              <Label>End Date / Expiry (Optional)</Label>
+              <Input 
+                type="date" 
+                value={endDate} 
+                onChange={e => setEndDate(e.target.value)} 
+                className="w-full max-w-xs"
+              />
+              <p className="text-xs text-gray-500">Banner will automatically hide after this date.</p>
+            </div>
+
+            <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">Add Banner</Button>
           </form>
         </CardContent>
       </Card>
@@ -234,14 +276,14 @@ export default function BannerManager() {
             {banners.map((banner, index) => (
               <Card key={banner.id} className="flex flex-row items-center p-4 gap-4">
                 <div className="flex flex-col gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, 'up')} disabled={index === 0}>
-                    <GripVertical className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, -1)} disabled={index === 0}>
+                    <ChevronUp className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, 'down')} disabled={index === banners.length - 1}>
-                    <GripVertical className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, 1)} disabled={index === banners.length - 1}>
+                    <ChevronDown className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 {banner.mediaType === "video" ? (
                   <video src={banner.imageUrl} className="w-48 h-24 object-cover rounded border bg-black" />
                 ) : (

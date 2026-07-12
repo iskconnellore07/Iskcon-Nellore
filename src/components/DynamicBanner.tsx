@@ -32,9 +32,13 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
         const snapshot = await getDocs(query(collection(db, "website_banners")));
         let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Banner[];
         
-        // Filter by location & sort by order manually to avoid composite index requirement
+        // Filter by location, sort, and exclude expired banners
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Start of today
+
         data = data
           .filter(b => b.location === location)
+          .filter(b => !b.endDate || new Date(b.endDate) >= now)
           .sort((a, b) => a.order - b.order);
           
         setBanners(data);
@@ -61,11 +65,11 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
   }
 
   return (
-    <section className="relative h-[250px] md:h-[400px] w-full overflow-hidden">
-      <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
-        <CarouselContent className="h-full">
+    <section className="relative w-full overflow-hidden">
+      <Carousel setApi={setApi} opts={{ loop: true }} className="w-full">
+        <CarouselContent>
           {banners.map((banner) => (
-            <CarouselItem key={banner.id} className="relative h-full basis-full">
+            <CarouselItem key={banner.id} className="relative h-[250px] md:h-[400px] basis-full">
               {banner.mediaType === "video" ? (
                 <video 
                   src={banner.imageUrl} 
