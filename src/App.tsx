@@ -14,6 +14,7 @@ import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 import Gallery from "./pages/Gallery";
 import Annadaan from "./pages/Annadaan";
+import Goshala from "./pages/Goshala";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import VolunteerPage from "./pages/Volunteer";
@@ -51,6 +52,7 @@ const App = () => (
           <Route path="/festivals" element={<Festivals />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/annadaan" element={<Annadaan />} />
+          <Route path="/goshala" element={<Goshala />} />
           <Route path="/support-us" element={<SupportUs />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/gallery" element={<Gallery />} />

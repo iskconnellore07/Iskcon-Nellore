@@ -54,9 +54,9 @@ const services = [
   },
   {
     icon: Gift,
-    title: "Nitya Seva",
-    description: "Daily worship sponsorship",
-    link: "/nitya-seva",
+    title: "Goshala",
+    description: "Cow protection and shelter",
+    link: "/goshala",
     color: "text-accent",
   },
 ];
