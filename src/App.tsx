@@ -25,6 +25,7 @@ import CourseManager from "./pages/admin/CourseManager";
 import GalleryManager from "./pages/admin/GalleryManager";
 import FestivalManager from "./pages/admin/FestivalManager";
 import DashboardLayout from "./pages/admin/DashboardLayout";
+import BannerManager from "./pages/admin/BannerManager";
 import FormManager from "./pages/admin/FormManager";
 import FormResponses from "./pages/admin/FormResponses";
 import FormPage from "./pages/FormPage";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="logins" element={<ManageLogins />} />
             <Route path="courses" element={<CourseManager />} />
             <Route path="gallery" element={<GalleryManager />} />
+            <Route path="banners" element={<BannerManager />} />
             <Route path="festivals" element={<FestivalManager />} />
             <Route path="forms" element={<FormManager />} />
             <Route path="form-responses/:formId" element={<FormResponses />} />

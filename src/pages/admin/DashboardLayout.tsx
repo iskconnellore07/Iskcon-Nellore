@@ -33,6 +33,7 @@ export default function DashboardLayout() {
     { name: "Devotee Management", href: "/admin/devotees", icon: Users, show: checkAccess('devotees') },
     { name: "Manage Logins", href: "/admin/logins", icon: UserPlus, show: role === "super_admin" },
     { name: "Course Manager", href: "/admin/courses", icon: PlaySquare, show: checkAccess('courses') },
+    { name: "Website Banners", href: "/admin/banners", icon: Image, show: checkAccess('banners') },
     { name: "Gallery Manager", href: "/admin/gallery", icon: Image, show: checkAccess('gallery') },
     { name: "Calendar & Festivals", href: "/admin/festivals", icon: Calendar, show: checkAccess('calendar') },
     { name: "Accommodation", href: "/admin/accommodation", icon: Home, show: checkAccess('accommodation') || role === 'admin' || role === 'super_admin' },

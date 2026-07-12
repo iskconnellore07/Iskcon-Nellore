@@ -37,6 +37,7 @@ const MODULES = [
   { id: "calendar", name: "Calendar & Festivals", icon: Calendar },
   { id: "accommodation", name: "Accommodation Manager", icon: Home },
   { id: "forms", name: "Event Forms Builder", icon: FileText },
+  { id: "banners", name: "Website Banners", icon: Image },
 ];
 
 export default function ManageLogins() {
