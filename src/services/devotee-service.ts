@@ -193,8 +193,9 @@ export async function importDevoteesFromCsv(file: File) {
           const newDevotees: Devotee[] = [];
           devoteesToInsert.forEach(d => {
             const newRef = doc(collection(db, "devotees"));
-            batch.set(newRef, d);
-            newDevotees.push({ id: newRef.id, ...d } as Devotee);
+            const cleanData = removeUndefined(d);
+            batch.set(newRef, cleanData);
+            newDevotees.push({ id: newRef.id, ...cleanData } as Devotee);
           });
           await batch.commit();
           resolve(newDevotees);
