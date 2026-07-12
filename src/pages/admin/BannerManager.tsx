@@ -178,24 +178,37 @@ export default function BannerManager() {
 
             <div className="space-y-2">
               <Label>Banner Media (Required)</Label>
-              <div className="flex gap-4 items-start">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant={mediaType === "image" ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setMediaType("image")}
+                    className={mediaType === "image" ? "bg-orange-500 hover:bg-orange-600" : ""}
+                  >
+                    Image Banner
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant={mediaType === "video" ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setMediaType("video")}
+                    className={mediaType === "video" ? "bg-orange-500 hover:bg-orange-600" : ""}
+                  >
+                    Video Banner
+                  </Button>
+                </div>
+                
                 <div className="flex-1 space-y-2">
                   <div className="flex gap-2">
-                    <select 
-                      className="border rounded px-2 py-1 bg-white"
-                      value={mediaType}
-                      onChange={(e) => setMediaType(e.target.value as "image" | "video")}
-                    >
-                      <option value="image">Image URL</option>
-                      <option value="video">Video URL</option>
-                    </select>
                     <Input 
                       className="flex-1"
                       value={imageUrl} 
                       onChange={e => setImageUrl(e.target.value)} 
-                      placeholder="https://..." 
-                      required 
+                      placeholder={mediaType === "video" ? "Paste Video URL (e.g. .mp4)" : "Paste Image URL"} 
                     />
+                  </div>
                   </div>
                   <div className="mt-2">
                     <GalleryPicker 
@@ -218,12 +231,15 @@ export default function BannerManager() {
                     )}
                   </div>
                 </div>
-                {imageUrl && mediaType === "image" && selectedMedia.length <= 1 && (
-                  <img src={imageUrl} alt="Preview" className="w-32 h-20 object-cover rounded border" />
-                )}
-                {imageUrl && mediaType === "video" && (
-                  <video src={imageUrl} className="w-32 h-20 object-cover rounded border bg-black" />
-                )}
+                
+                <div className="mt-2">
+                  {imageUrl && mediaType === "image" && selectedMedia.length <= 1 && (
+                    <img src={imageUrl} alt="Preview" className="w-32 h-20 object-cover rounded border" />
+                  )}
+                  {imageUrl && mediaType === "video" && (
+                    <video src={imageUrl} className="w-32 h-20 object-cover rounded border bg-black" />
+                  )}
+                </div>
               </div>
             </div>
 
