@@ -34,7 +34,11 @@ export function GalleryPicker({ onSelect, maxSelection = 5 }: GalleryPickerProps
       const gData = gSnap.docs.map(d => ({ id: d.id, ...d.data(), type: "image" as const })) as MediaItem[];
       const vData = vSnap.docs.map(d => ({ id: d.id, ...d.data(), type: "video" as const })) as MediaItem[];
       
-      setMedia([...gData, ...vData]);
+      const allMedia = [...gData, ...vData].sort((a: any, b: any) => 
+        (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
+      );
+      
+      setMedia(allMedia);
     } catch (error) {
       console.error("Failed to load gallery", error);
     }
