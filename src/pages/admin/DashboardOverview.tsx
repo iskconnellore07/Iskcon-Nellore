@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BookHeart, Wallet, AlertCircle, Download } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any[]>([]);
@@ -11,24 +13,21 @@ export default function DashboardOverview() {
   const [activeTab, setActiveTab] = useState<"Donation" | "Festivals" | "80G">("Donation");
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch("http://localhost:4000/dashboard-stats");
-        if (!res.ok) {
-          const errData = await res.json().catch(() => null);
-          throw new Error(errData?.error || "Failed to fetch from Google Sheets");
-        }
-        const data = await res.json();
-        setStats(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const q = query(collection(db, "transactions"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setStats(data);
+      setLoading(false);
+      setError(null);
+    }, (err) => {
+      console.error("Firebase fetch error:", err);
+      setError(err.message);
+      setLoading(false);
+    });
 
-    fetchStats();
+    return () => unsubscribe();
   }, []);
+
 
   const totalDonations = stats
     .filter(row => row.formType === "Donation")
@@ -99,10 +98,10 @@ export default function DashboardOverview() {
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Google Sheets Connection Error</AlertTitle>
+          <AlertTitle>Database Connection Error</AlertTitle>
           <AlertDescription>
             {error} <br />
-            <strong>Action Required:</strong> Please make sure you added the <code>doGet</code> function to your Google Apps Script as instructed.
+            <strong>Action Required:</strong> Check your Firebase connection and permissions.
           </AlertDescription>
         </Alert>
       )}
@@ -126,7 +125,7 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "..." : totalFestivals}</div>
-            <p className="text-xs text-muted-foreground">From Google Sheets</p>
+            <p className="text-xs text-muted-foreground">From Database</p>
           </CardContent>
         </Card>
 
@@ -139,7 +138,7 @@ export default function DashboardOverview() {
             <div className="text-2xl font-bold">
               {loading ? "..." : `₹${totalDonations.toLocaleString('en-IN')}`}
             </div>
-            <p className="text-xs text-muted-foreground">From Google Sheets</p>
+            <p className="text-xs text-muted-foreground">From Database</p>
           </CardContent>
         </Card>
       </div>

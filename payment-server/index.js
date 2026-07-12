@@ -3,7 +3,21 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, addDoc } = require('firebase/firestore');
 require('dotenv').config();
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAiRwVZi3NWMALFOGuW9VFunYfRWY0qQIo",
+  authDomain: "iskcon-nellore.firebaseapp.com",
+  projectId: "iskcon-nellore",
+  storageBucket: "iskcon-nellore.firebasestorage.app",
+  messagingSenderId: "866388993763",
+  appId: "1:866388993763:web:635954965e4f2e2127c7d6",
+  measurementId: "G-XJ5VFDB8PS"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(firebaseApp);
 
 const app = express();
 app.use(cors());
@@ -197,6 +211,33 @@ app.post('/verify-payment', (req, res) => {
         claim80G: order.claim80G ? true : false
       })
     }).catch(err => console.error("Error sending to Apps Script:", err));
+  }
+
+  // --- Write to Firebase Firestore ---
+  try {
+    const transactionData = {
+      formType: order.festival ? 'Festivals' : 'Donation',
+      name: order.name,
+      email: order.email || '',
+      phone: order.phone || '',
+      amount: order.amount / 100,
+      date: order.date || order.paidAt,
+      paymentId: paymentId,
+      orderId: orderId,
+      festival: order.festival || '',
+      slot: order.slot || '',
+      people: order.people || '',
+      pan: order.pan || '',
+      address: order.address || '',
+      claim80G: order.claim80G ? true : false,
+      timestamp: new Date().toISOString()
+    };
+    
+    addDoc(collection(firestoreDb, "transactions"), transactionData)
+      .then((docRef) => console.log("Transaction written to Firebase with ID: ", docRef.id))
+      .catch((err) => console.error("Error adding document to Firebase: ", err));
+  } catch (error) {
+    console.error("Firebase write error:", error);
   }
 
   // --- Send MSG91 SMS Confirmation ---
