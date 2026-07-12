@@ -65,11 +65,11 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
   }
 
   return (
-    <section className="relative w-full overflow-hidden">
+    <section className="relative w-full overflow-hidden bg-black">
       <Carousel setApi={setApi} opts={{ loop: true }} className="w-full">
         <CarouselContent>
           {banners.map((banner) => (
-            <CarouselItem key={banner.id} className="relative h-[250px] md:h-[400px] basis-full">
+            <CarouselItem key={banner.id} className="relative basis-full flex items-center justify-center">
               {banner.mediaType === "video" ? (
                 <video 
                   src={banner.imageUrl} 
@@ -77,17 +77,18 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
                   loop 
                   muted 
                   playsInline 
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="w-full max-h-[75vh] object-contain"
                 />
               ) : (
-                <div 
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${banner.imageUrl})` }}
+                <img 
+                  src={banner.imageUrl}
+                  alt={banner.title || "Banner"}
+                  className="w-full max-h-[75vh] object-contain"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/70 pointer-events-none" />
               
-              <div className="relative z-10 container mx-auto px-4 h-full flex flex-col items-center justify-center text-center animate-fade-in">
+              <div className="absolute inset-0 z-10 container mx-auto px-4 flex flex-col items-center justify-center text-center animate-fade-in pointer-events-none">
                 {banner.title && (
                   <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white drop-shadow-md">
                     {banner.title}
@@ -99,7 +100,7 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
                   </p>
                 )}
                 {banner.buttonText && banner.buttonLink && (
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center pointer-events-auto">
                     <Button variant="hero" size="lg" asChild>
                       {banner.buttonLink.startsWith('http') ? (
                         <a href={banner.buttonLink} target="_blank" rel="noopener noreferrer">
