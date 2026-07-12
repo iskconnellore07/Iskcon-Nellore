@@ -91,9 +91,9 @@ export const DynamicBanner = ({ location, children }: DynamicBannerProps) => {
                   className="w-full h-auto block"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/70 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
               
-              <div className="absolute inset-0 z-10 container mx-auto px-4 flex flex-col items-center justify-center text-center animate-fade-in pointer-events-none">
+              <div className="absolute inset-0 z-10 container mx-auto px-4 flex flex-col items-center justify-end pb-12 md:pb-20 text-center animate-fade-in pointer-events-none">
                 {banner.title && (
                   <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white drop-shadow-md">
                     {banner.title}
