@@ -36,6 +36,9 @@ const orders = {};
 
 // Helper function to send SMS via MSG91 Flow API
 async function sendMsg91SMS(templateId, mobile, variables) {
+  console.log('TEST MODE: MSG91 SMS disabled to prevent real charges.');
+  return;
+  
   const authKey = process.env.MSG91_AUTH_KEY;
   if (!authKey) {
     console.log('MSG91_AUTH_KEY not configured. Skipping SMS.');

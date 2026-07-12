@@ -32,6 +32,9 @@ class Msg91SmsService {
     senderName?: string
   ): Promise<SmsResult> {
     try {
+      console.log('TEST MODE: MSG91 SMS disabled to prevent real charges.');
+      return { success: true, messageId: "test-mode", provider: "msg91" };
+      
       if (!this.authKey) {
         return { success: false, error: "MSG91 Auth Key not configured", provider: "msg91" };
       }

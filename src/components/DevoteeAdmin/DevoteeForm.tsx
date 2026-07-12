@@ -22,7 +22,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
     email: "",
     birthday: "",
     anniversary: "",
-    donation_day_of_month: "",
     donation_amount: "",
     donation_type: "yearly" as const,
     status: "active" as const,
@@ -37,7 +36,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
         email: devotee.email || "",
         birthday: devotee.birthday || "",
         anniversary: devotee.anniversary || "",
-        donation_day_of_month: devotee.donation_day_of_month?.toString() || "",
         donation_amount: devotee.donation_amount?.toString() || "",
         donation_type: devotee.donation_type || "yearly",
         status: devotee.status || "active",
@@ -57,9 +55,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
         email: formData.email || undefined,
         birthday: formData.birthday || undefined,
         anniversary: formData.anniversary || undefined,
-        donation_day_of_month: formData.donation_day_of_month
-          ? parseInt(formData.donation_day_of_month)
-          : undefined,
         donation_amount: formData.donation_amount
           ? parseFloat(formData.donation_amount)
           : undefined,
@@ -75,7 +70,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
         email: "",
         birthday: "",
         anniversary: "",
-        donation_day_of_month: "",
         donation_amount: "",
         donation_type: "yearly",
         status: "active",
@@ -157,20 +151,6 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
                 type="date"
                 value={formData.anniversary}
                 onChange={(e) => setFormData({ ...formData, anniversary: e.target.value })}
-              />
-            </div>
-
-            {/* Donation Info */}
-            <div>
-              <Label htmlFor="donation_day">Donation Day of Month</Label>
-              <Input
-                id="donation_day"
-                type="number"
-                min="1"
-                max="31"
-                value={formData.donation_day_of_month}
-                onChange={(e) => setFormData({ ...formData, donation_day_of_month: e.target.value })}
-                placeholder="25"
               />
             </div>
 
