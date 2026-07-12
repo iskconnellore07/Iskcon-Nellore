@@ -166,6 +166,8 @@ export async function importDevoteesFromCsv(file: File) {
         if (lines.length < 2) return resolve([]);
         const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
         
+        const existingDevotees = await fetchDevotees();
+        
         const devoteesToInsert = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
@@ -184,7 +186,13 @@ export async function importDevoteesFromCsv(file: File) {
           });
           
           if (devotee.name && devotee.phone) {
-            devoteesToInsert.push(devotee);
+            const isDuplicate = existingDevotees.some(
+              (d) => d.phone === devotee.phone && d.name.toLowerCase() === devotee.name.toLowerCase()
+            );
+            if (!isDuplicate) {
+              devoteesToInsert.push(devotee);
+              existingDevotees.push(devotee); // Prevent duplicates within the CSV itself
+            }
           }
         }
 
