@@ -43,6 +43,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /sms_logs/{logId} {
+      allow read: if isSevaka();
+      allow write: if isAdmin() || true; // temporary allow for backend
+    }
+
+    match /donations/{donationId} {
+      allow read: if isSevaka();
+      allow write: if isAdmin();
+    }
+
     // GALLERY COLLECTION (Photos)
     match /gallery/{photoId} {
       allow read: if true;
@@ -105,6 +115,12 @@ service cloud.firestore {
     match /accommodation_bookings/{bookingId} {
       allow read, update, delete: if isAdmin();
       allow create: if true;
+    }
+    // TRANSACTIONS COLLECTION (Donations & Festivals)
+    match /transactions/{transactionId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if false;
     }
   }
 }

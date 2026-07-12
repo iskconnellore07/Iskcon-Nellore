@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { addDonation } from "@/services/devotee-service";
 import { Plus } from "lucide-react";
-import type { Devotee, Donation } from "@/integrations/supabase/devotee-types";
+import type { Devotee, Donation } from "@/types/devotee-types";
 
 interface DonationHistoryProps {
   devotee: Devotee | null;

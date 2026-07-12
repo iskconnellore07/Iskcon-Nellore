@@ -21,7 +21,7 @@ import {
   exportDevokeesToCsv,
   importDevoteesFromCsv,
 } from "@/services/devotee-service";
-import type { Devotee, Donation, SmsLog } from "@/integrations/supabase/devotee-types";
+import type { Devotee, Donation, SmsLog } from "@/types/devotee-types";
 import DevoteeForm from "./DevoteeForm";
 import DevoteeTable from "./DevoteeTable";
 import DonationHistory from "./DonationHistory";

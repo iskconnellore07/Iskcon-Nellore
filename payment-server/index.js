@@ -294,49 +294,6 @@ app.get('/orders/:id', (req, res) => {
   res.json(order);
 });
 
-// --- ADMIN USER CREATION ---
-const { createClient } = require('@supabase/supabase-js');
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-let supabaseAdmin = null;
-
-if (supabaseUrl && supabaseServiceKey) {
-  supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
-}
-
-app.post('/create-admin-user', async (req, res) => {
-  if (!supabaseAdmin) {
-    return res.status(500).json({ error: 'Supabase admin client not configured on server.' });
-  }
-
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required.' });
-  }
-
-  try {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true // Auto-confirm the admin user so they can login immediately
-    });
-
-    if (error) {
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.json({ success: true, user: data.user });
-  } catch (err) {
-    console.error('Error creating user:', err);
-    res.status(500).json({ error: 'Internal server error.' });
-  }
-});
-
 // --- DASHBOARD STATS (From Google Sheets) ---
 app.get('/dashboard-stats', async (req, res) => {
   const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;

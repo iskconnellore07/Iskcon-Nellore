@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertCircle, CheckCircle, Clock } from "lucide-react";
-import type { SmsLog } from "@/integrations/supabase/devotee-types";
+import type { SmsLog } from "@/types/devotee-types";
 
 interface SmsLogsProps {
   logs: SmsLog[];

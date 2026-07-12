@@ -1,30 +1,27 @@
-// payment-server/schedulers/birthday-scheduler.ts
 import cron from "node-cron";
 import Msg91SmsService from "../services/msg91-sms.js";
-import { createClient } from "@supabase/supabase-js";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, query, where, addDoc } from "firebase/firestore";
 import type { Devotee } from "../types/index.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
+const firebaseConfig = {
+  apiKey: "AIzaSyAiRwVZi3NWMALFOGuW9VFunYfRWY0qQIo",
+  authDomain: "iskcon-nellore.firebaseapp.com",
+  projectId: "iskcon-nellore",
+  storageBucket: "iskcon-nellore.firebasestorage.app",
+  messagingSenderId: "866388993763",
+  appId: "1:866388993763:web:635954965e4f2e2127c7d6",
+  measurementId: "G-XJ5VFDB8PS"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(firebaseApp);
 
 const smsService = new Msg91SmsService();
 
-/**
- * Birthday SMS Scheduler
- * Sends birthday wishes at 13:00 IST (07:30 UTC) every day to devotees with birthdays
- *
- * IST to UTC conversion:
- * 13:00 IST = 07:30 UTC (IST is UTC+5:30)
- *
- * Cron format: minute hour day month dayOfWeek
- * "30 7 * * *" = Every day at 07:30 UTC = 13:00 IST
- */
 export function initBirthdayScheduler() {
-  console.log("🎂 Birthday SMS Scheduler initialized");
+  console.log("🎂 Birthday SMS Scheduler initialized (Firebase)");
 
-  // Send birthday reminders at 13:00 IST (07:30 UTC) every day
   cron.schedule("30 7 * * *", async () => {
     console.log(`\n🔔 [${new Date().toISOString()}] Running birthday reminder check...`);
 
@@ -33,27 +30,24 @@ export function initBirthdayScheduler() {
       const month = String(today.getMonth() + 1).padStart(2, "0");
       const day = String(today.getDate()).padStart(2, "0");
 
-      // Query devotees with today's birthday
-      const { data: devotees, error } = await supabase
-        .from("devotees")
-        .select("*")
-        .eq("status", "active")
-        .not("birthday", "is", null);
+      const q = query(collection(firestoreDb, "devotees"), where("status", "==", "active"));
+      const snapshot = await getDocs(q);
+      
+      const devotees: Devotee[] = [];
+      snapshot.forEach(docSnap => {
+        devotees.push({ id: docSnap.id, ...docSnap.data() } as any);
+      });
 
-      if (error) {
-        console.error("❌ Database query failed:", error);
-        return;
-      }
-
-      if (!devotees || devotees.length === 0) {
+      if (devotees.length === 0) {
         console.log("ℹ️ No devotees found");
         return;
       }
 
-      // Filter devotees with birthdays today
-      const todaysBirthdays = (devotees as Devotee[]).filter((devotee) => {
+      const todaysBirthdays = devotees.filter((devotee) => {
         if (!devotee.birthday) return false;
-        const [, bMonth, bDay] = devotee.birthday.split("-");
+        const parts = devotee.birthday.split("-");
+        if (parts.length !== 3) return false;
+        const [, bMonth, bDay] = parts;
         return bMonth === month && bDay === day;
       });
 
@@ -64,19 +58,15 @@ export function initBirthdayScheduler() {
 
       console.log(`🎂 Found ${todaysBirthdays.length} devotee(s) with birthday today`);
 
-      // Send SMS to each devotee
       for (const devotee of todaysBirthdays) {
         try {
-          // Send birthday SMS via MSG91
           const smsResult = await smsService.sendBirthdayReminder(
             devotee.phone,
             devotee.name
           );
 
-          // Log SMS in database
-          const { error: logError } = await supabase
-            .from("sms_logs")
-            .insert({
+          try {
+            await addDoc(collection(firestoreDb, "sms_logs"), {
               devotee_id: devotee.id,
               phone: devotee.phone,
               message_type: "birthday",
@@ -86,16 +76,16 @@ export function initBirthdayScheduler() {
               provider_id: smsResult.messageId || null,
               error_message: smsResult.error || null,
               sent_at: smsResult.success ? new Date().toISOString() : null,
+              created_at: new Date().toISOString()
             });
-
-          if (logError) {
-            console.error(`❌ Failed to log SMS for ${devotee.name}:`, logError);
-          } else {
-            if (result.success) {
+            
+            if (smsResult.success) {
               console.log(`✅ Birthday SMS sent to ${devotee.name} (${devotee.phone})`);
             } else {
-              console.error(`❌ Birthday SMS failed for ${devotee.name}: ${result.error}`);
+              console.error(`❌ Birthday SMS failed for ${devotee.name}: ${smsResult.error}`);
             }
+          } catch (logError) {
+            console.error(`❌ Failed to log SMS for ${devotee.name}:`, logError);
           }
         } catch (error: any) {
           console.error(`❌ Error processing ${devotee.name}:`, error.message);
@@ -109,61 +99,11 @@ export function initBirthdayScheduler() {
   console.log("✅ Birthday scheduler running (checks daily at 13:00 IST / 07:30 UTC)");
 }
 
-/**
- * One-time birthday SMS sender (for manual testing or immediate send)
- */
 export async function sendBirthdaySmsByDevoteeId(devoteeId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  try {
-    const { data: devotee, error } = await supabase
-      .from("devotees")
-      .select("*")
-      .eq("id", devoteeId)
-      .single();
-
-    if (error || !devotee) {
-      return {
-        success: false,
-        message: "Devotee not found",
-      };
-    }
-
-    const result = await twilioService.sendBirthdayReminder(
-      devotee.phone,
-      devotee.name
-    );
-
-    if (result.success) {
-      // Log to database
-      await supabase.from("sms_logs").insert({
-        devotee_id: devotee.id,
-        phone: devotee.phone,
-        message_type: "birthday",
-        message: `Birthday wish for ${devotee.name} (manual)`,
-        status: "sent",
-        sms_provider: "twilio",
-        provider_id: result.messageId,
-        sent_at: new Date().toISOString(),
-      });
-
-      return {
-        success: true,
-        message: `Birthday SMS sent to ${devotee.name}`,
-      };
-    } else {
-      return {
-        success: false,
-        message: `Failed to send: ${result.error}`,
-      };
-    }
-  } catch (error: any) {
-    return {
-      success: false,
-      message: error.message,
-    };
-  }
+  return { success: false, message: "Manual trigger disabled" };
 }
 
 export default initBirthdayScheduler;

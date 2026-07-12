@@ -1,210 +1,148 @@
-// src/services/devotee-service.ts
-import { supabase } from "@/integrations/supabase/client";
-import type { Devotee, Donation, SmsLog } from "@/integrations/supabase/devotee-types";
+import { db } from "@/lib/firebase";
+import { 
+  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, 
+  query, where, orderBy, writeBatch 
+} from "firebase/firestore";
+import type { Devotee, Donation, SmsLog } from "@/types/devotee-types";
 
-/**
- * Fetch all devotees with optional filters
- */
-export async function fetchDevotees(filters?: {
-  status?: string;
-  search?: string;
-}) {
-  let query = supabase.from("devotees").select("*");
+// Helper to push to Google Sheets
+async function syncToGoogleSheets(devotee: Partial<Devotee>) {
+  const url = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbxZ-DlzUDiC-0TfPUPEo_GlMQCTE8ykJXY8CCt-TdrKmAb7DiwAFaJiIFLASEduh7JRdg/exec";
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        formType: "DevoteeCRM",
+        name: devotee.name || "",
+        phone: devotee.phone || "",
+        email: devotee.email || "",
+        birthday: devotee.birthday || "",
+        anniversary: devotee.anniversary || "",
+        status: devotee.status || "active",
+        date: new Date().toISOString()
+      })
+    });
+  } catch (err) {
+    console.error("Failed to sync devotee to Google Sheets", err);
+  }
+}
+
+export async function fetchDevotees(filters?: { status?: string; search?: string }) {
+  let q = query(collection(db, "devotees"), orderBy("created_at", "desc"));
+  
+  if (filters?.status) {
+    // Firestore requires compound index if orderBy is different than where, so we just filter status in JS if needed.
+    // For simplicity, we fetch all and filter to avoid needing an index.
+  }
+  
+  const snapshot = await getDocs(q);
+  let devotees: Devotee[] = [];
+  snapshot.forEach(docSnap => {
+    devotees.push({ id: docSnap.id, ...docSnap.data() } as Devotee);
+  });
 
   if (filters?.status) {
-    query = query.eq("status", filters.status);
+    devotees = devotees.filter(d => d.status === filters.status);
   }
 
   if (filters?.search) {
-    query = query.or(
-      `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+    const s = filters.search.toLowerCase();
+    devotees = devotees.filter(d => 
+      (d.name?.toLowerCase() || '').includes(s) || 
+      (d.phone || '').includes(s) || 
+      (d.email?.toLowerCase() || '').includes(s)
     );
   }
-
-  const { data, error } = await query.order("created_at", {
-    ascending: false,
-  });
-
-  if (error) throw error;
-  return data as Devotee[];
+  return devotees;
 }
 
-/**
- * Fetch single devotee by ID
- */
 export async function fetchDevotee(id: string) {
-  const { data, error } = await supabase
-    .from("devotees")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw error;
-  return data as Devotee;
+  const docSnap = await getDoc(doc(db, "devotees", id));
+  if (!docSnap.exists()) throw new Error("Not found");
+  return { id: docSnap.id, ...docSnap.data() } as Devotee;
 }
 
-/**
- * Create new devotee
- */
 export async function createDevotee(devotee: Omit<Devotee, "id" | "created_at" | "updated_at">) {
-  const { data, error } = await supabase
-    .from("devotees")
-    .insert(devotee)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Devotee;
-}
-
-/**
- * Update existing devotee
- */
-export async function updateDevotee(
-  id: string,
-  updates: Partial<Omit<Devotee, "id" | "created_at">>
-) {
-  const { data, error } = await supabase
-    .from("devotees")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Devotee;
-}
-
-/**
- * Delete devotee
- */
-export async function deleteDevotee(id: string) {
-  const { error } = await supabase.from("devotees").delete().eq("id", id);
-
-  if (error) throw error;
-}
-
-/**
- * Fetch donation history for a devotee
- */
-export async function fetchDonationHistory(devoteeId: string) {
-  const { data, error } = await supabase
-    .from("donations")
-    .select("*")
-    .eq("devotee_id", devoteeId)
-    .order("donation_date", { ascending: false });
-
-  if (error) throw error;
-  return data as Donation[];
-}
-
-/**
- * Add donation record
- */
-export async function addDonation(donation: Omit<Donation, "id" | "created_at">) {
-  const { data, error } = await supabase
-    .from("donations")
-    .insert(donation)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Donation;
-}
-
-/**
- * Get SMS logs for a devotee
- */
-export async function fetchSmsLogs(devoteeId?: string) {
-  let query = supabase.from("sms_logs").select("*");
-
-  if (devoteeId) {
-    query = query.eq("devotee_id", devoteeId);
-  }
-
-  const { data, error } = await query.order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data as SmsLog[];
-}
-
-/**
- * Get SMS statistics
- */
-export async function getSmsStats() {
-  const { data, error } = await supabase
-    .from("sms_logs")
-    .select("status, COUNT(*) as count", { count: "exact" })
-    .group_by("status");
-
-  if (error) throw error;
+  const data = { ...devotee, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  const docRef = await addDoc(collection(db, "devotees"), data);
+  const newDevotee = { id: docRef.id, ...data } as Devotee;
   
-  const stats = {
-    sent: 0,
-    failed: 0,
-    pending: 0,
-  };
+  syncToGoogleSheets(newDevotee).catch(console.error); // Fire and forget
+  return newDevotee;
+}
 
-  (data as any[])?.forEach((item) => {
-    stats[item.status as keyof typeof stats] = item.count;
+export async function updateDevotee(id: string, updates: Partial<Omit<Devotee, "id" | "created_at">>) {
+  updates.updated_at = new Date().toISOString();
+  await updateDoc(doc(db, "devotees", id), updates);
+  
+  const updatedDoc = await fetchDevotee(id);
+  syncToGoogleSheets(updatedDoc).catch(console.error); // Fire and forget
+  return updatedDoc;
+}
+
+export async function deleteDevotee(id: string) {
+  await deleteDoc(doc(db, "devotees", id));
+}
+
+export async function fetchDonationHistory(devoteeId: string) {
+  const q = query(collection(db, "donations"), where("devotee_id", "==", devoteeId));
+  const snapshot = await getDocs(q);
+  const donations: Donation[] = [];
+  snapshot.forEach(docSnap => {
+    donations.push({ id: docSnap.id, ...docSnap.data() } as Donation);
   });
+  return donations.sort((a, b) => new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime());
+}
 
+export async function addDonation(donation: Omit<Donation, "id" | "created_at">) {
+  const data = { ...donation, created_at: new Date().toISOString() };
+  const docRef = await addDoc(collection(db, "donations"), data);
+  return { id: docRef.id, ...data } as Donation;
+}
+
+export async function fetchSmsLogs(devoteeId?: string) {
+  let q = query(collection(db, "sms_logs"));
+  if (devoteeId) {
+    q = query(collection(db, "sms_logs"), where("devotee_id", "==", devoteeId));
+  }
+  const snapshot = await getDocs(q);
+  const logs: SmsLog[] = [];
+  snapshot.forEach(docSnap => {
+    logs.push({ id: docSnap.id, ...docSnap.data() } as SmsLog);
+  });
+  return logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+export async function getSmsStats() {
+  const logs = await fetchSmsLogs();
+  const stats = { sent: 0, failed: 0, pending: 0 };
+  logs.forEach(log => {
+    if (log.status === "sent") stats.sent++;
+    if (log.status === "failed") stats.failed++;
+    if (log.status === "pending") stats.pending++;
+  });
   return stats;
 }
 
-/**
- * Get devotee statistics
- */
 export async function getDevoteeStats() {
-  const { data, error } = await supabase
-    .from("devotees")
-    .select("status, COUNT(*) as count", { count: "exact" })
-    .group_by("status");
-
-  if (error) throw error;
-
-  const stats = {
-    active: 0,
-    inactive: 0,
-    paused: 0,
-  };
-
-  (data as any[])?.forEach((item) => {
-    stats[item.status as keyof typeof stats] = item.count;
+  const devs = await fetchDevotees();
+  const stats = { active: 0, inactive: 0, paused: 0 };
+  devs.forEach(d => {
+    if (d.status === "active") stats.active++;
+    if (d.status === "inactive") stats.inactive++;
+    if (d.status === "paused") stats.paused++;
   });
-
   return stats;
 }
 
-/**
- * Export devotees to CSV
- */
 export function exportDevokeesToCsv(devotees: Devotee[]) {
-  const headers = [
-    "Name",
-    "Phone",
-    "Email",
-    "Birthday",
-    "Anniversary",
-    "Donation Day",
-    "Donation Amount",
-    "Status",
-  ];
-
-  const rows = devotees.map((d) => [
-    d.name,
-    d.phone,
-    d.email || "",
-    d.birthday || "",
-    d.anniversary || "",
-    d.donation_day_of_month || "",
-    d.donation_amount || "",
-    d.status || "active",
+  const headers = ["Name", "Phone", "Email", "Birthday", "Anniversary", "Donation Day", "Donation Amount", "Status"];
+  const rows = devotees.map(d => [
+    d.name, d.phone, d.email || "", d.birthday || "", d.anniversary || "", 
+    d.donation_day_of_month || "", d.donation_amount || "", d.status || "active"
   ]);
-
-  const csv =
-    [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
-
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -214,27 +152,22 @@ export function exportDevokeesToCsv(devotees: Devotee[]) {
   window.URL.revokeObjectURL(url);
 }
 
-/**
- * Import devotees from CSV
- */
 export async function importDevoteesFromCsv(file: File) {
   return new Promise<Devotee[]>((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
         const lines = text.split("\n");
-        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-
-        const devotees: Omit<Devotee, "id" | "created_at" | "updated_at">[] = [];
-
+        if (lines.length < 2) return resolve([]);
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        
+        const devoteesToInsert = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
-
-          const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
-          const devotee: any = {};
-
+          const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+          const devotee: any = { created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+          
           headers.forEach((header, index) => {
             if (header === "name") devotee.name = values[index];
             if (header === "phone") devotee.phone = values[index];
@@ -245,21 +178,22 @@ export async function importDevoteesFromCsv(file: File) {
             if (header === "donation amount") devotee.donation_amount = parseFloat(values[index]) || undefined;
             if (header === "status") devotee.status = values[index] || "active";
           });
-
+          
           if (devotee.name && devotee.phone) {
-            devotees.push(devotee);
+            devoteesToInsert.push(devotee);
           }
         }
 
-        // Bulk insert
-        if (devotees.length > 0) {
-          const { data, error } = await supabase
-            .from("devotees")
-            .insert(devotees)
-            .select();
-
-          if (error) throw error;
-          resolve(data as Devotee[]);
+        if (devoteesToInsert.length > 0) {
+          const batch = writeBatch(db);
+          const newDevotees: Devotee[] = [];
+          devoteesToInsert.forEach(d => {
+            const newRef = doc(collection(db, "devotees"));
+            batch.set(newRef, d);
+            newDevotees.push({ id: newRef.id, ...d } as Devotee);
+          });
+          await batch.commit();
+          resolve(newDevotees);
         } else {
           resolve([]);
         }
@@ -267,46 +201,30 @@ export async function importDevoteesFromCsv(file: File) {
         reject(error);
       }
     };
-
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsText(file);
   });
 }
 
-/**
- * Get devotees with birthdays in next N days
- */
 export async function getUpcomingBirthdays(days: number = 7) {
+  const devs = await fetchDevotees({ status: "active" });
   const today = new Date();
   const endDate = new Date(today);
   endDate.setDate(today.getDate() + days);
 
-  const { data, error } = await supabase
-    .from("devotees")
-    .select("*")
-    .eq("status", "active")
-    .not("birthday", "is", null);
-
-  if (error) throw error;
-
-  // Filter in JS since SQL date filtering is tricky for birthdays
-  return (data as Devotee[]).filter((d) => {
+  return devs.filter(d => {
     if (!d.birthday) return false;
-    const [, month, day] = d.birthday.split("-");
+    const parts = d.birthday.split("-");
+    if (parts.length !== 3) return false;
+    const [, month, day] = parts;
     const birthDate = new Date(today.getFullYear(), parseInt(month) - 1, parseInt(day));
-
     return birthDate >= today && birthDate <= endDate;
   });
 }
 
-/**
- * Get devotees with upcoming donations
- */
 export async function getUpcomingDonations(days: number = 7) {
+  const devs = await fetchDevotees({ status: "active" });
   const today = new Date();
-  const endDate = new Date(today);
-  endDate.setDate(today.getDate() + days);
-
   const targetDays = [];
   for (let i = 0; i <= days; i++) {
     const d = new Date(today);
@@ -314,12 +232,7 @@ export async function getUpcomingDonations(days: number = 7) {
     targetDays.push(d.getDate());
   }
 
-  const { data, error } = await supabase
-    .from("devotees")
-    .select("*")
-    .eq("status", "active")
-    .in("donation_day_of_month", targetDays);
-
-  if (error) throw error;
-  return data as Devotee[];
+  return devs.filter(d => 
+    d.donation_day_of_month && targetDays.includes(d.donation_day_of_month)
+  );
 }

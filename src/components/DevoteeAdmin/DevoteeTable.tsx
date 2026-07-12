@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Trash2, Eye } from "lucide-react";
-import type { Devotee } from "@/integrations/supabase/devotee-types";
+import type { Devotee } from "@/types/devotee-types";
 
 interface DevoteeTableProps {
   devotees: Devotee[];
