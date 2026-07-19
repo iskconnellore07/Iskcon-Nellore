@@ -40,7 +40,7 @@ const Header = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [claim80G, setClaim80G] = useState(false);
   const [formData, setFormData] = useState({
-    name: "", mobile: "", address: "", email: "", pan: "", pincode: "", donationFor: "general"
+    name: "", mobile: "", address: "", email: "", pan: "", pincode: "", donationFor: "general", templeLocation: "ISKCON Nellore"
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -254,6 +254,24 @@ const Header = () => {
                   <SelectItem value="pooja">Offer a pooja</SelectItem>
                   <SelectItem value="birthday">Donate on birthday or special occasion</SelectItem>
                   <SelectItem value="vidya">Vidya Dhan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="temple-location">Temple Location</Label>
+              <Select 
+                value={formData.templeLocation} 
+                onValueChange={(val) => setFormData({ ...formData, templeLocation: val })}
+              >
+                <SelectTrigger id="temple-location">
+                  <SelectValue placeholder="Select temple location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ISKCON Nellore">ISKCON Nellore</SelectItem>
+                  <SelectItem value="ISKCON Naidupet">ISKCON Naidupet</SelectItem>
+                  <SelectItem value="ISKCON Sullurpeta">ISKCON Sullurpeta</SelectItem>
+                  <SelectItem value="ISKCON Kavali">ISKCON Kavali</SelectItem>
+                  <SelectItem value="ISKCON Gudur">ISKCON Gudur</SelectItem>
                 </SelectContent>
               </Select>
             </div>

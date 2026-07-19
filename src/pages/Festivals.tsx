@@ -45,6 +45,7 @@ type Booking = {
   people: number;
   amount?: number;
   paid?: boolean;
+  location: string;
   createdAt: string;
   claim80G?: boolean;
   panOrGst?: string;
@@ -98,6 +99,7 @@ export default function Festivals() {
   });
   const [slot, setSlot] = useState("06:00 - 07:00");
   const [people, setPeople] = useState<number>(1);
+  const [location, setLocation] = useState("ISKCON Nellore");
   const [message, setMessage] = useState<string | null>(null);
 
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -172,6 +174,7 @@ export default function Festivals() {
       date: date ? format(date, "yyyy-MM-dd") : "",
       slot,
       people: Number(people),
+      location,
       amount: getAmount(festival, Number(people)),
       claim80G,
       panOrGst: pan.trim() ? pan.toUpperCase().replace(/\s+/g, "") : undefined,
@@ -217,6 +220,7 @@ export default function Festivals() {
       people: Number(previewData.people || 1),
       amount: Number(previewData.amount || 0),
       paid: true,
+      location: previewData.location || "ISKCON Nellore",
       createdAt: new Date().toISOString(),
       claim80G: previewData.claim80G,
       panOrGst: previewData.panOrGst,
@@ -282,6 +286,7 @@ export default function Festivals() {
           date: booking.date,
           slot: booking.slot,
           people: booking.people?.toString() || '1',
+          location: booking.location,
           claim80G: booking.claim80G,
           pan: booking.panOrGst,
         },
@@ -339,6 +344,20 @@ export default function Festivals() {
                   <div>
                     <Label>Name</Label>
                     <Input value={name} onChange={(e) => setName(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Location / Temple</Label>
+                    <select 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    >
+                      <option value="ISKCON Nellore">ISKCON Nellore</option>
+                      <option value="ISKCON Naidupet">ISKCON Naidupet</option>
+                      <option value="ISKCON Sullurpeta">ISKCON Sullurpeta</option>
+                      <option value="ISKCON Kavali">ISKCON Kavali</option>
+                      <option value="ISKCON Gudur">ISKCON Gudur</option>
+                    </select>
                   </div>
                   <div>
                     <Label>Phone</Label>
@@ -483,6 +502,7 @@ export default function Festivals() {
               <div><strong>Date:</strong> {lastBooking.date}</div>
               <div><strong>Slot:</strong> {lastBooking.slot}</div>
               <div><strong>People:</strong> {lastBooking.people}</div>
+              <div><strong>Location:</strong> {lastBooking.location}</div>
               <div><strong>Amount:</strong> ₹ {lastBooking.amount}</div>
               <div><strong>Paid:</strong> {lastBooking.paid ? "Yes" : "No"}</div>
             </div>
