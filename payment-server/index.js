@@ -136,7 +136,18 @@ app.post('/create-order', async (req, res) => {
       ];
     }
 
-    const order = await razorpay.orders.create(orderOptions);
+    let order;
+    try {
+      order = await razorpay.orders.create(orderOptions);
+    } catch (err) {
+      if (err.statusCode === 400 && err.error?.description === 'This transfer is not supported') {
+        console.warn("Razorpay Route is not yet enabled on this account. Retrying without transfers.");
+        delete orderOptions.transfers;
+        order = await razorpay.orders.create(orderOptions);
+      } else {
+        throw err;
+      }
+    }
 
     orders[order.id] = {
       orderId: order.id,
