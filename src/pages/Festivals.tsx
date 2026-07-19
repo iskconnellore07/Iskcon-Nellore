@@ -196,7 +196,12 @@ export default function Festivals() {
       const resp = await fetch(`${API_BASE_URL}/verify-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: paymentResult.orderId, paymentId: paymentResult.paymentId, signature: paymentResult.signature }),
+        body: JSON.stringify({ 
+          orderId: paymentResult.orderId, 
+          paymentId: paymentResult.paymentId, 
+          signature: paymentResult.signature,
+          orderData: paymentResult.originalData 
+        }),
       });
       const data = await resp.json();
       if (!resp.ok || !data.success) {
