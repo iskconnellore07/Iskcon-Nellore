@@ -87,7 +87,7 @@ app.post('/create-order', async (req, res) => {
     return res.status(500).json({ error: 'Payment gateway not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.' });
   }
 
-  const { name, phone, mobile, email, festival, date, slot, people, amount, claim80G, pan, address } = req.body;
+  const { name, phone, mobile, email, festival, date, slot, people, amount, claim80G, pan, address, templeLocation } = req.body;
   const phoneNumber = phone || mobile;
   const amountNumber = Number(amount);
   if (!amountNumber || amountNumber <= 0) {
@@ -109,13 +109,21 @@ app.post('/create-order', async (req, res) => {
         date: date || '',
         slot: slot || '',
         people: people || '',
+        templeLocation: templeLocation || 'ISKCON Nellore',
       },
     };
 
-    if (process.env.ISKCON_ACCOUNT_ID) {
+    // Razorpay Route: Determine which linked account to transfer funds to
+    let linkedAccountId = process.env.ISKCON_ACCOUNT_ID; // Default Nellore
+    if (templeLocation === "ISKCON Naidupet") linkedAccountId = process.env.ISKCON_NAIDUPET_ACCOUNT_ID || linkedAccountId;
+    if (templeLocation === "ISKCON Sullurpeta") linkedAccountId = process.env.ISKCON_SULLURPETA_ACCOUNT_ID || linkedAccountId;
+    if (templeLocation === "ISKCON Kavali") linkedAccountId = process.env.ISKCON_KAVALI_ACCOUNT_ID || linkedAccountId;
+    if (templeLocation === "ISKCON Gudur") linkedAccountId = process.env.ISKCON_GUDUR_ACCOUNT_ID || linkedAccountId;
+
+    if (linkedAccountId) {
       orderOptions.transfers = [
         {
-          account: process.env.ISKCON_ACCOUNT_ID,
+          account: linkedAccountId,
           amount: amountPaise,
           currency: 'INR',
           notes: {
@@ -144,6 +152,7 @@ app.post('/create-order', async (req, res) => {
       claim80G,
       pan,
       address,
+      templeLocation: templeLocation || 'ISKCON Nellore',
       paid: false,
       createdAt: new Date().toISOString(),
     };
