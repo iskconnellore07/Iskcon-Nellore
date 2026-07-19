@@ -270,7 +270,7 @@ app.post('/verify-payment', (req, res) => {
         festival: order.festival,
         date: order.date || new Date().toLocaleDateString(),
         ticket: orderId.substring(orderId.length - 6).toUpperCase(),
-        url: 'https://iskconnellore.com'
+        url: `https://iskconnellore.com/receipt/${orderId}`
       });
     } else {
       // General Donation Receipt
@@ -279,7 +279,7 @@ app.post('/verify-payment', (req, res) => {
         name: order.name,
         numeric: (order.amount / 100).toString(),
         amount: (order.amount / 100).toString(),
-        url: 'https://iskconnellore.com'
+        url: `https://iskconnellore.com/receipt/${orderId}`
       });
     }
   }

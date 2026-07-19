@@ -14,6 +14,7 @@ import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 import Gallery from "./pages/Gallery";
 import Annadaan from "./pages/Annadaan";
+import ReceiptDownload from "./pages/ReceiptDownload";
 import Goshala from "./pages/Goshala";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -58,6 +59,7 @@ const App = () => (
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/accommodation" element={<Accommodation />} />
           <Route path="/forms/:formId" element={<FormPage />} />
+          <Route path="/receipt/:orderId" element={<ReceiptDownload />} />
           
           {/* ADMIN ROUTES */}
           <Route path="/admin/login" element={<AdminLogin />} />
