@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { API_BASE_URL } from "@/config";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ const Contact = () => {
     setStatus("Sending message...");
     
     try {
-      const response = await fetch("http://localhost:4000/submit-contact", {
+      const response = await fetch(`${API_BASE_URL}/submit-contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, message }),

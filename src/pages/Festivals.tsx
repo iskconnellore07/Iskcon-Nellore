@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { jsPDF } from "jspdf";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
+import { API_BASE_URL } from "@/config";
 
 declare global {
   interface Window {
@@ -192,7 +193,7 @@ export default function Festivals() {
     if (!previewData) return;
     setPaymentProcessing(true);
     try {
-      const resp = await fetch('http://localhost:4000/verify-payment', {
+      const resp = await fetch(`${API_BASE_URL}/verify-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: paymentResult.orderId, paymentId: paymentResult.paymentId, signature: paymentResult.signature }),
@@ -247,7 +248,7 @@ export default function Festivals() {
   // Create an order on the local Express payment server and launch Razorpay checkout
   async function createOrderOnServer(booking: Partial<Booking>) {
     try {
-      const resp = await fetch('http://localhost:4000/create-order', {
+      const resp = await fetch(`${API_BASE_URL}/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(booking),

@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Menu, Heart } from "lucide-react";
 import { useState } from "react";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
+import { API_BASE_URL } from "@/config";
 
 const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -72,7 +73,7 @@ const Header = () => {
     }
 
     try {
-      const orderResponse = await fetch("http://localhost:4000/create-order", {
+      const orderResponse = await fetch(`${API_BASE_URL}/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, claim80G, ...formData }),
@@ -93,7 +94,7 @@ const Header = () => {
         description: "Donation",
         order_id: orderData.orderId,
         handler: async function (response: any) {
-          const verifyResponse = await fetch("http://localhost:4000/verify-payment", {
+          const verifyResponse = await fetch(`${API_BASE_URL}/verify-payment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
