@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { Booking } from "@/types";
+import receiptBg from "@/assets/receipt_bg.PNG";
 
 export type ReceiptType = "FESTIVAL" | "DONATION";
 
@@ -59,7 +60,7 @@ export async function generateBeautifulReceipt(data: ReceiptData) {
 
   // 1. Draw the Full Page Background Template
   try {
-    const bgData = await getImageDataFromUrl("/src/assets/receipt_bg.png");
+    const bgData = await getImageDataFromUrl(receiptBg);
     if (bgData) {
       // Draw background covering the entire A4 page
       doc.addImage(bgData.base64, "PNG", 0, 0, width, height);
