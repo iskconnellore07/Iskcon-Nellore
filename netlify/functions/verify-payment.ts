@@ -84,26 +84,30 @@ export const handler: Handler = async (event) => {
     const amountFloat = Number(order.amount);
 
     if (process.env.GOOGLE_APPS_SCRIPT_URL) {
-      fetch(process.env.GOOGLE_APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          formType: order.festival ? 'Festivals' : 'Donation',
-          name: order.name,
-          email: order.email || '',
-          phone: order.phone || '',
-          amount: amountFloat,
-          date: order.date || order.paidAt,
-          paymentId: paymentId,
-          orderId: orderId,
-          festival: order.festival || '',
-          slot: order.slot || '',
-          people: order.people || '',
-          pan: order.pan || '',
-          address: order.address || '',
-          claim80G: order.claim80G ? true : false
-        })
-      }).catch(err => console.error("Error sending to Apps Script:", err));
+      try {
+        await fetch(process.env.GOOGLE_APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            formType: order.festival ? 'Festivals' : 'Donation',
+            name: order.name,
+            email: order.email || '',
+            phone: order.phone || '',
+            amount: amountFloat,
+            date: order.date || order.paidAt,
+            paymentId: paymentId,
+            orderId: orderId,
+            festival: order.festival || '',
+            slot: order.slot || '',
+            people: order.people || '',
+            pan: order.pan || '',
+            address: order.address || '',
+            claim80G: order.claim80G ? true : false
+          })
+        });
+      } catch (err) {
+        console.error("Error sending to Apps Script:", err);
+      }
     }
 
     try {
@@ -133,7 +137,7 @@ export const handler: Handler = async (event) => {
 
     if (order.phone) {
       if (order.festival) {
-        sendMsg91SMS('6a44c3bee9bec73631098c22', order.phone, {
+        await sendMsg91SMS('6a44c3bee9bec73631098c22', order.phone, {
           alphanumeric: order.name,
           name: order.name,
           festival: order.festival,
@@ -142,7 +146,7 @@ export const handler: Handler = async (event) => {
           url: `https://iskconnellore.com/receipt/${orderId}`
         });
       } else {
-        sendMsg91SMS('6a44c3ef034572e8e305b062', order.phone, {
+        await sendMsg91SMS('6a44c3ef034572e8e305b062', order.phone, {
           alphanumeric: order.name,
           name: order.name,
           numeric: amountFloat.toString(),
