@@ -54,12 +54,20 @@ const Header = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount) {
-      alert("Please enter a donation amount.");
+    if (!formData.name?.trim()) {
+      alert("Please enter your name.");
+      return;
+    }
+    if (!formData.mobile?.trim()) {
+      alert("Please enter your mobile number.");
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      alert("Please enter a valid donation amount greater than 0.");
       return;
     }
     
-    if (claim80G && Number(amount) >= 2000 && !formData.pan.trim()) {
+    if (claim80G && Number(amount) >= 2000 && !formData.pan?.trim()) {
       alert("PAN Number is required for 80G Receipt.");
       return;
     }
@@ -280,11 +288,11 @@ const Header = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="donor-name">Name</Label>
+                <Label htmlFor="donor-name">Name <span className="text-red-500">*</span></Label>
                 <Input id="donor-name" name="name" value={formData.name} onChange={handleChange} placeholder="Your name" required />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="donor-mobile">Mobile Number</Label>
+                <Label htmlFor="donor-mobile">Mobile Number <span className="text-red-500">*</span></Label>
                 <Input id="donor-mobile" name="mobile" type="tel" value={formData.mobile} onChange={handleChange} placeholder="+91" required />
               </div>
             </div>
@@ -294,7 +302,7 @@ const Header = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="donor-amount">Amount</Label>
+                <Label htmlFor="donor-amount">Amount <span className="text-red-500">*</span></Label>
                 <Input
                   id="donor-amount"
                   name="amount"
