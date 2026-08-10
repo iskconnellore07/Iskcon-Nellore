@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { Booking } from "@/types";
-import receiptBg from "@/assets/receipt_bg.PNG";
+import receiptBg from "@/assets/receipt_bg.png";
 
 export type ReceiptType = "FESTIVAL" | "DONATION";
 

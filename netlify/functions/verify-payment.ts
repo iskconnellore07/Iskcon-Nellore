@@ -89,7 +89,7 @@ export const handler: Handler = async (event) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            formType: order.festival ? 'Festivals' : 'Donation',
+            formType: (order.festival && order.festival !== 'General Donation' && order.festival !== 'Nitya Annadaan') ? 'Festivals' : 'Donation',
             name: order.name,
             email: order.email || '',
             phone: order.phone || '',
@@ -112,7 +112,7 @@ export const handler: Handler = async (event) => {
 
     try {
       const transactionData = {
-        formType: order.festival ? 'Festivals' : 'Donation',
+        formType: (order.festival && order.festival !== 'General Donation' && order.festival !== 'Nitya Annadaan') ? 'Festivals' : 'Donation',
         name: order.name,
         email: order.email || '',
         phone: order.phone || '',
@@ -136,7 +136,9 @@ export const handler: Handler = async (event) => {
     }
 
     if (order.phone) {
-      if (order.festival) {
+      const isFestival = order.festival && order.festival !== 'General Donation' && order.festival !== 'Nitya Annadaan';
+      
+      if (isFestival) {
         await sendMsg91SMS('6a44c3bee9bec73631098c22', order.phone, {
           alphanumeric: order.name,
           name: order.name,
