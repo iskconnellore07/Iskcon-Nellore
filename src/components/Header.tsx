@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logo from "@/assets/iskcon_logo.avif";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Menu, Heart } from "lucide-react";
-import { useState } from "react";
+import { Menu, Heart, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
 import { API_BASE_URL } from "@/config";
 
@@ -35,14 +35,30 @@ const loadRazorpay = () => {
 };
 
 const Header = () => {
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [claim80G, setClaim80G] = useState(false);
+  
+  // Default branch based on URL
+  const getDefaultBranch = () => {
+    const path = location.pathname.toLowerCase();
+    if (path.includes('gudur')) return 'ISKCON Gudur';
+    if (path.includes('kavali')) return 'ISKCON Kavali';
+    if (path.includes('naidupeta')) return 'ISKCON Naidupet';
+    if (path.includes('sullurpeta')) return 'ISKCON Sullurpeta';
+    return 'ISKCON Nellore';
+  };
+
   const [formData, setFormData] = useState({
-    name: "", mobile: "", address: "", email: "", pan: "", pincode: "", donationFor: "general", templeLocation: "ISKCON Nellore"
+    name: "", mobile: "", address: "", email: "", pan: "", pincode: "", donationFor: "general", templeLocation: getDefaultBranch()
   });
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, templeLocation: getDefaultBranch() }));
+  }, [location.pathname]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
@@ -172,6 +188,20 @@ const Header = () => {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
+            <div className="relative group">
+              <button className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors outline-none">
+                Our Branches <ChevronDown className="ml-1 h-4 w-4" />
+              </button>
+              <div className="absolute left-0 top-full mt-2 w-48 rounded-md border border-border bg-background shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="py-2">
+                  <Link to="/" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Nellore</Link>
+                  <Link to="/gudur" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Gudur</Link>
+                  <Link to="/kavali" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Kavali</Link>
+                  <Link to="/naidupeta" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Naidupet</Link>
+                  <a href="https://iskconsullurupet.com/" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Sullurpeta</a>
+                </div>
+              </div>
+            </div>
             <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Home
             </Link>
@@ -211,6 +241,14 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border animate-slide-in">
             <nav className="flex flex-col space-y-3">
+              <div className="border-b border-border pb-2 mb-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1 mb-2 block">Our Branches</span>
+                <Link to="/" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Nellore</Link>
+                <Link to="/gudur" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Gudur</Link>
+                <Link to="/kavali" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Kavali</Link>
+                <Link to="/naidupeta" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Naidupet</Link>
+                <a href="https://iskconsullurupet.com/" target="_blank" rel="noopener noreferrer" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Sullurpeta</a>
+              </div>
               <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
                 Home
               </Link>

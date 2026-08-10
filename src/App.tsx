@@ -46,7 +46,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Index branch="Nellore" />} />
+          <Route path="/gudur" element={<Index branch="Gudur" />} />
+          <Route path="/kavali" element={<Index branch="Kavali" />} />
+          <Route path="/naidupeta" element={<Index branch="Naidupeta" />} />
           <Route path="/about" element={<About />} />
           <Route path="/darshan" element={<Darshan />} />
           <Route path="/events" element={<Events />} />
