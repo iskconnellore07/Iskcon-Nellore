@@ -117,6 +117,7 @@ export const handler: Handler = async (event, context) => {
           date,
           slot,
           people,
+          amount: amountNumber,
           claim80G,
           pan,
           address,
