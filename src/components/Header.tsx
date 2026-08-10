@@ -143,6 +143,7 @@ const Header = () => {
       };
 
       const paymentObject = new (window as any).Razorpay(options);
+      setIsDonateOpen(false);
       paymentObject.open();
     } catch (err) {
       console.error(err);

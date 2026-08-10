@@ -118,3 +118,5 @@ All colors MUST be HSL.
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+.razorpay-container { z-index: 999999 !important; }
