@@ -15,7 +15,7 @@ const Index = () => {
       <Header />
       <main className="flex-1">
         <DynamicBanner location="home">
-          <section className="relative h-[250px] md:h-[300px] flex items-center justify-center overflow-hidden">
+          <section className="relative min-h-[400px] md:min-h-[500px] py-16 flex items-center justify-center overflow-hidden">
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${heroImage})` }}
