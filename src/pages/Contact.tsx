@@ -1,7 +1,11 @@
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/config";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { useBranchPrefix, useBranchName } from "@/hooks/useBranchPrefix";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +19,25 @@ const Contact = () => {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [branchInfo, setBranchInfo] = useState<any>(null);
+  const branchPrefix = useBranchPrefix();
+  const branchName = useBranchName();
+  const branchSlug = branchPrefix.replace('/', '') || 'nellore';
+
+  useEffect(() => {
+    const fetchBranchInfo = async () => {
+      try {
+        const docRef = doc(db, "branches", branchSlug);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setBranchInfo(docSnap.data());
+        }
+      } catch (error) {
+        console.error("Error fetching branch info:", error);
+      }
+    };
+    fetchBranchInfo();
+  }, [branchSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +77,7 @@ const Contact = () => {
       <main className="flex-1">
         <section className="py-12 bg-muted">
           <div className="container mx-auto px-4">
+            <BackToHome />
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -121,10 +145,8 @@ const Contact = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-2">Address</h3>
-                        <p className="text-sm text-muted-foreground">
-                          ISKCON Temple<br />
-                          Nellore, Andhra Pradesh<br />
-                          India - 524004
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {branchInfo?.address || `ISKCON Temple\nNellore, Andhra Pradesh\nIndia - 524004`}
                         </p>
                       </div>
                     </div>
@@ -135,9 +157,8 @@ const Contact = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-2">Phone</h3>
-                        <p className="text-sm text-muted-foreground">
-                          +91 12345 67890<br />
-                          +91 98765 43210
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {branchInfo?.phone || `+91 12345 67890\n+91 98765 43210`}
                         </p>
                       </div>
                     </div>
@@ -148,9 +169,8 @@ const Contact = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-2">Email</h3>
-                        <p className="text-sm text-muted-foreground">
-                          info@iskconnellore.org<br />
-                          contact@iskconnellore.org
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {branchInfo?.email || `info@iskconnellore.org\ncontact@iskconnellore.org`}
                         </p>
                       </div>
                     </div>
@@ -161,9 +181,8 @@ const Contact = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-2">Temple Timings</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Daily: 4:30 AM - 9:00 PM<br />
-                          Sundays: 4:30 AM - 9:30 PM
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {branchInfo?.timings || `Daily: 4:30 AM - 9:00 PM\nSundays: 4:30 AM - 9:30 PM`}
                         </p>
                       </div>
                     </div>
@@ -174,7 +193,7 @@ const Contact = () => {
                   <CardContent className="p-0">
                     <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                       <iframe
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3767.1!2d73.0!3d19.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDE4JzAwLjAiTiA3M8KwMDAnMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890"
+                        src={branchInfo?.mapEmbedUrl || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3767.1!2d73.0!3d19.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDE4JzAwLjAiTiA3M8KwMDAnMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890"}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}

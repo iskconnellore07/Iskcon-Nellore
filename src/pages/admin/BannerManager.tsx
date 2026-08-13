@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import { GalleryPicker } from "@/components/admin/GalleryPicker";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Banner {
   id: string;
@@ -20,9 +21,13 @@ interface Banner {
   location: "home" | "darshan" | "goshala";
   endDate?: string;
   order: number;
+  branchId?: string;
 }
 
 export default function BannerManager() {
+  const { dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
+
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -46,7 +51,8 @@ export default function BannerManager() {
       setLoading(true);
       const snapshot = await getDocs(query(collection(db, "website_banners"), orderBy("order", "asc")));
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Banner[];
-      setBanners(data);
+      const filtered = data.filter(item => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setBanners(filtered);
     } catch (error) {
       console.error("Error fetching banners:", error);
       toast.error("Failed to load banners");
@@ -81,6 +87,7 @@ export default function BannerManager() {
           location,
           endDate: endDate || null,
           order: currentOrder++,
+          branchId: activeBranch,
           createdAt: serverTimestamp()
         });
       }

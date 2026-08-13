@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import { Image as ImageIcon, Video, Heart, X, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -92,6 +93,7 @@ export default function Gallery() {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
+          <BackToHome />
           <div className="flex items-center space-x-4 mb-8">
             <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-orange-400 to-red-500 p-1">
               <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">

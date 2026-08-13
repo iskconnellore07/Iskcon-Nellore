@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import * as XLSX from "xlsx";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
@@ -100,8 +105,30 @@ export default function Festivals() {
   });
   const [slot, setSlot] = useState("06:00 - 07:00");
   const [people, setPeople] = useState<number>(1);
+  const routerLocation = useLocation();
+  const branchPrefix = useBranchPrefix();
+  const branchSlug = branchPrefix.replace('/', '') || 'nellore';
+
   const [location, setLocation] = useState("ISKCON Nellore");
   const [message, setMessage] = useState<string | null>(null);
+  const [branchInfo, setBranchInfo] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchBranchInfo = async () => {
+      try {
+        const docRef = doc(db, "branches", branchSlug);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setBranchInfo(data);
+          setLocation(data.name || "ISKCON Nellore");
+        }
+      } catch (error) {
+        console.error("Error fetching branch info:", error);
+      }
+    };
+    fetchBranchInfo();
+  }, [branchSlug]);
 
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [previewBooking, setPreviewBooking] = useState<Partial<Booking> | null>(null);
@@ -148,7 +175,11 @@ export default function Festivals() {
       status: "PAID" as const,
       type: "FESTIVAL" as const,
       festival: booking.festival,
-      panOrGst: booking.panOrGst
+      panOrGst: booking.panOrGst,
+      branchName: branchInfo?.name,
+      branchAddress: branchInfo?.address,
+      branchPhone: branchInfo?.phone,
+      branchEmail: branchInfo?.email
     };
 
     generateBeautifulReceipt(receiptData);
@@ -337,6 +368,7 @@ export default function Festivals() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
+          <BackToHome />
           <h1 className="text-3xl font-semibold mb-6">Festival Slot Booking</h1>
 
           <Card>
@@ -351,20 +383,22 @@ export default function Festivals() {
                     <Label>Name</Label>
                     <Input value={name} onChange={(e) => setName(e.target.value)} />
                   </div>
-                  <div>
-                    <Label>Location / Temple</Label>
-                    <select 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                    >
-                      <option value="ISKCON Nellore">ISKCON Nellore</option>
-                      <option value="ISKCON Naidupet">ISKCON Naidupet</option>
-                      <option value="ISKCON Sullurpeta">ISKCON Sullurpeta</option>
-                      <option value="ISKCON Kavali">ISKCON Kavali</option>
-                      <option value="ISKCON Gudur">ISKCON Gudur</option>
-                    </select>
-                  </div>
+                  {getDefaultBranch() === 'ISKCON Nellore' && (
+                    <div>
+                      <Label>Location / Temple</Label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      >
+                        <option value="ISKCON Nellore">ISKCON Nellore</option>
+                        <option value="ISKCON Naidupet">ISKCON Naidupet</option>
+                        <option value="ISKCON Sullurpeta">ISKCON Sullurpeta</option>
+                        <option value="ISKCON Kavali">ISKCON Kavali</option>
+                        <option value="ISKCON Gudur">ISKCON Gudur</option>
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <Label>Phone</Label>
                     <Input value={phone} onChange={(e) => setPhone(e.target.value)} />

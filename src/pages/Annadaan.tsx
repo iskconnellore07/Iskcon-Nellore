@@ -1,13 +1,19 @@
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
+import { useBranchName } from "@/hooks/useBranchPrefix";
 import { Card, CardContent } from "@/components/ui/card";
 import { HandHeart, Quote, Phone, Mail } from "lucide-react";
 
 export default function Annadaan() {
+  const branchName = useBranchName();
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 bg-muted/30">
+        <div className="container mx-auto px-4 pt-4">
+          <BackToHome />
+        </div>
         {/* Hero Section */}
         <section className="bg-primary/10 py-16">
           <div className="container mx-auto px-4 text-center">
@@ -55,7 +61,7 @@ export default function Annadaan() {
                 <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg text-center mt-8">
                   <h3 className="text-2xl font-bold text-orange-800 mb-2">Local Impact</h3>
                   <p className="text-xl text-orange-900 font-medium">
-                    ISKCON Nellore serves <span className="font-bold text-3xl mx-2">25,000</span> children daily in the afternoon through ISKCON Food Relief Foundation.
+                    ISKCON {branchName} serves <span className="font-bold text-3xl mx-2">25,000</span> children daily in the afternoon through ISKCON Food Relief Foundation.
                   </p>
                 </div>
               </CardContent>

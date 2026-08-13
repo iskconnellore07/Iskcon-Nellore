@@ -28,7 +28,7 @@ async function syncToGoogleSheets(devotee: Partial<Devotee>) {
   }
 }
 
-export async function fetchDevotees(filters?: { status?: string; search?: string }) {
+export async function fetchDevotees(filters?: { status?: string; search?: string }, activeBranch?: string) {
   let q = query(collection(db, "devotees"), orderBy("created_at", "desc"));
   
   if (filters?.status) {
@@ -39,7 +39,10 @@ export async function fetchDevotees(filters?: { status?: string; search?: string
   const snapshot = await getDocs(q);
   let devotees: Devotee[] = [];
   snapshot.forEach(docSnap => {
-    devotees.push({ id: docSnap.id, ...docSnap.data() } as Devotee);
+    const d = { id: docSnap.id, ...docSnap.data() } as Devotee;
+    if (!activeBranch || d.branchId === activeBranch || (!d.branchId && activeBranch === 'nellore')) {
+      devotees.push(d);
+    }
   });
 
   if (filters?.status) {
@@ -67,8 +70,13 @@ function removeUndefined(obj: any) {
   return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 }
 
-export async function createDevotee(devotee: Omit<Devotee, "id" | "created_at" | "updated_at">) {
-  const data = removeUndefined({ ...devotee, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+export async function createDevotee(devotee: Omit<Devotee, "id" | "created_at" | "updated_at">, activeBranch?: string) {
+  const data = removeUndefined({ 
+    ...devotee, 
+    branchId: activeBranch || "nellore",
+    created_at: new Date().toISOString(), 
+    updated_at: new Date().toISOString() 
+  });
   const docRef = await addDoc(collection(db, "devotees"), data);
   const newDevotee = { id: docRef.id, ...data } as Devotee;
   
@@ -105,7 +113,7 @@ export async function addDonation(donation: Omit<Donation, "id" | "created_at">)
   return { id: docRef.id, ...data } as Donation;
 }
 
-export async function fetchSmsLogs(devoteeId?: string) {
+export async function fetchSmsLogs(devoteeId?: string, activeBranch?: string) {
   let q = query(collection(db, "sms_logs"));
   if (devoteeId) {
     q = query(collection(db, "sms_logs"), where("devotee_id", "==", devoteeId));
@@ -113,13 +121,16 @@ export async function fetchSmsLogs(devoteeId?: string) {
   const snapshot = await getDocs(q);
   const logs: SmsLog[] = [];
   snapshot.forEach(docSnap => {
-    logs.push({ id: docSnap.id, ...docSnap.data() } as SmsLog);
+    const l = { id: docSnap.id, ...docSnap.data() } as SmsLog;
+    if (!activeBranch || l.branchId === activeBranch || (!l.branchId && activeBranch === 'nellore')) {
+      logs.push(l);
+    }
   });
   return logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
-export async function getSmsStats() {
-  const logs = await fetchSmsLogs();
+export async function getSmsStats(activeBranch?: string) {
+  const logs = await fetchSmsLogs(undefined, activeBranch);
   const stats = { sent: 0, failed: 0, pending: 0 };
   logs.forEach(log => {
     if (log.status === "sent") stats.sent++;
@@ -129,8 +140,8 @@ export async function getSmsStats() {
   return stats;
 }
 
-export async function getDevoteeStats() {
-  const devs = await fetchDevotees();
+export async function getDevoteeStats(activeBranch?: string) {
+  const devs = await fetchDevotees(undefined, activeBranch);
   const stats = { active: 0, inactive: 0, paused: 0 };
   devs.forEach(d => {
     if (d.status === "active") stats.active++;

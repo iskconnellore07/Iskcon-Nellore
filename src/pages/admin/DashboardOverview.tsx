@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BookHeart, Wallet, AlertCircle, Download } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
@@ -11,6 +12,7 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"Donation" | "Festivals" | "80G">("Donation");
+  const { dashboardBranchId } = useAuth();
 
   useEffect(() => {
     const q = query(collection(db, "transactions"), orderBy("timestamp", "desc"));
@@ -29,23 +31,29 @@ export default function DashboardOverview() {
   }, []);
 
 
-  const totalDonations = stats
+  const activeBranch = dashboardBranchId || "nellore";
+  const branchStats = stats.filter(row => 
+    row.branchId === activeBranch || 
+    (activeBranch === 'nellore' && !row.branchId) // Legacy transactions default to Nellore
+  );
+
+  const totalDonations = branchStats
     .filter(row => row.formType === "Donation")
     .reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
 
-  const totalFestivals = stats
+  const totalFestivals = branchStats
     .filter(row => row.formType === "Festivals").length;
 
   const getFilteredData = () => {
     if (activeTab === "80G") {
-      return stats.filter(row => 
+      return branchStats.filter(row => 
         row.claim80G === true || 
         (row.pan && row.pan.trim() !== "") ||
         (row["PAN "] && row["PAN "].trim() !== "") ||
         (row["PAN"] && row["PAN"].trim() !== "")
       );
     }
-    return stats.filter(row => row.formType === activeTab);
+    return branchStats.filter(row => row.formType === activeTab);
   };
 
   const downloadCSV = () => {
@@ -179,7 +187,7 @@ export default function DashboardOverview() {
                   No transactions found for {activeTab}.
                 </div>
               ) : (
-                filteredData.slice(-50).reverse().map((row, i) => (
+                filteredData.map((row, i) => (
                   <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="space-y-1">
                       <p className="font-medium text-base">{row.name}</p>

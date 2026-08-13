@@ -1,14 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, UserPlus, LogOut, Menu, X, BookHeart, Image, Calendar, AlertCircle, PlaySquare, FileText, ShieldAlert, Home } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, LogOut, Menu, X, BookHeart, Image, Calendar, AlertCircle, PlaySquare, FileText, ShieldAlert, Home, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
 
 export default function DashboardLayout() {
-  const { user, role, permissions, isActive, signOut } = useAuth();
+  const { user, role, branchId, dashboardBranchId, setDashboardBranchId, permissions, isActive, signOut } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'super_admin' || role === 'superadmin') {
+      const fetchBranches = async () => {
+        try {
+          const snapshot = await getDocs(query(collection(db, "branches"), orderBy("createdAt", "asc")));
+          setBranches(
+            snapshot.docs
+              .filter(doc => doc.data().type !== 'external')
+              .map(doc => ({ id: doc.id, name: doc.data().name }))
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchBranches();
+    }
+  }, [role]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -16,7 +37,7 @@ export default function DashboardLayout() {
   };
 
   const checkAccess = (module: string) => {
-    if (role === "super_admin") return true; // Super Admin sees all
+    if (role === "super_admin" || role === "superadmin") return true; // Super Admin sees all
 
     // If no permissions object exists, deny by default
     if (!permissions || !permissions[module]?.hasAccess) return false;
@@ -29,16 +50,17 @@ export default function DashboardLayout() {
   };
 
   const navigation = [
-    { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard, show: checkAccess('overview') },
+    { name: "Overview", href: "/admin/overview", icon: LayoutDashboard, show: checkAccess('overview') },
+    { name: "Branch Manager", href: "/admin/branches", icon: Home, show: (role === "super_admin" || role === "superadmin") && (!branchId || branchId === 'nellore') },
     { name: "Devotee Management", href: "/admin/devotees", icon: Users, show: checkAccess('devotees') },
-    { name: "Manage Logins", href: "/admin/logins", icon: UserPlus, show: role === "super_admin" },
+    { name: "Manage Logins", href: "/admin/users", icon: UserPlus, show: role === "super_admin" || role === "superadmin" },
     { name: "Course Manager", href: "/admin/courses", icon: PlaySquare, show: checkAccess('courses') },
     { name: "Website Banners", href: "/admin/banners", icon: Image, show: checkAccess('banners') },
     { name: "Gallery Manager", href: "/admin/gallery", icon: Image, show: checkAccess('gallery') },
-    { name: "Calendar & Festivals", href: "/admin/festivals", icon: Calendar, show: checkAccess('calendar') },
-    { name: "Accommodation", href: "/admin/accommodation", icon: Home, show: checkAccess('accommodation') || role === 'admin' || role === 'super_admin' },
-    { name: "Form Builder", href: "/admin/forms", icon: FileText, show: checkAccess('calendar') || role === 'admin' || role === 'super_admin' },
-    { name: "Audit Logs", href: "/admin/audit", icon: ShieldAlert, show: role === "super_admin" },
+    { name: "Calendar & Festivals", href: "/admin/calendar", icon: Calendar, show: checkAccess('calendar') },
+    { name: "Accommodation", href: "/admin/accommodation", icon: Home, show: checkAccess('accommodation') || role === 'admin' || role === 'super_admin' || role === 'superadmin' },
+    { name: "Form Builder", href: "/admin/forms", icon: FileText, show: checkAccess('calendar') || role === 'admin' || role === 'super_admin' || role === 'superadmin' },
+    { name: "Audit Logs", href: "/admin/audit-logs", icon: ShieldAlert, show: role === "super_admin" || role === "superadmin" },
   ].filter(item => item.show);
 
   if (!isActive) {
@@ -68,16 +90,17 @@ export default function DashboardLayout() {
 
   // General Access Protection for any other blocked route
   const currentNav = [
-    { name: "Overview", href: "/admin/dashboard", show: checkAccess('overview') },
+    { name: "Overview", href: "/admin/overview", show: checkAccess('overview') },
+    { name: "Branch Manager", href: "/admin/branches", show: (role === "super_admin" || role === "superadmin") && (!branchId || branchId === 'nellore') },
     { name: "Devotee Management", href: "/admin/devotees", show: checkAccess('devotees') },
-    { name: "Manage Logins", href: "/admin/logins", show: role === "super_admin" },
+    { name: "Manage Logins", href: "/admin/users", show: role === "super_admin" || role === "superadmin" },
     { name: "Course Manager", href: "/admin/courses", show: checkAccess('courses') },
     { name: "Gallery Manager", href: "/admin/gallery", show: checkAccess('gallery') },
-    { name: "Calendar & Festivals", href: "/admin/festivals", show: checkAccess('calendar') },
+    { name: "Calendar & Festivals", href: "/admin/calendar", show: checkAccess('calendar') },
     { name: "Accommodation", href: "/admin/accommodation", show: true },
     { name: "Form Builder", href: "/admin/forms", show: true },
-    { name: "Form Responses", href: "/admin/form-responses", show: true },
-    { name: "Audit Logs", href: "/admin/audit", show: role === "super_admin" },
+    { name: "Form Responses", href: "/admin/forms/", show: true },
+    { name: "Audit Logs", href: "/admin/audit-logs", show: role === "super_admin" || role === "superadmin" },
   ].find(n => currentPath.startsWith(n.href));
 
   if (currentNav && !currentNav.show) {
@@ -91,6 +114,8 @@ export default function DashboardLayout() {
       </div>
     );
   }
+
+  const isMasterSuperAdmin = (role === 'super_admin' || role === 'superadmin') && (!branchId || branchId === 'nellore');
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -125,8 +150,30 @@ export default function DashboardLayout() {
               {user?.email}
             </p>
             <p className="text-xs text-gray-500 capitalize">
-              {role === 'super_admin' ? 'Super Admin' : role === 'media_team' ? 'Media Team' : role}
+              {role === 'super_admin' || role === 'superadmin' ? 'Super Admin' : role === 'media_team' ? 'Media Team' : role}
             </p>
+            
+            {isMasterSuperAdmin && branches.length > 0 && (
+              <div className="mt-3">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Managing Branch:</label>
+                <select 
+                  className="w-full bg-gray-50 border border-gray-200 text-sm rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                  value={dashboardBranchId || 'nellore'}
+                  onChange={(e) => setDashboardBranchId(e.target.value)}
+                >
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {!isMasterSuperAdmin && dashboardBranchId && (
+              <div className="mt-3">
+                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 uppercase">
+                  <MapPin className="w-3 h-3 mr-1" /> {dashboardBranchId}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Navigation */}

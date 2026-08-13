@@ -21,7 +21,8 @@ interface MediaItem {
 }
 
 export default function GalleryManager() {
-  const { user, role } = useAuth();
+  const { user, role, dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -52,10 +53,11 @@ export default function GalleryManager() {
       const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: "video" as const })) as MediaItem[];
       
       const allMedia = [...galleryData, ...videosData];
-      const totalBytes = allMedia.reduce((sum, item) => sum + (item.size || 0), 0);
+      const filtered = allMedia.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      const totalBytes = filtered.reduce((sum, item) => sum + (item.size || 0), 0);
       setTotalStorage(totalBytes);
       
-      setMedia(allMedia.sort((a: any, b: any) => 
+      setMedia(filtered.sort((a: any, b: any) => 
         (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
       ));
     } catch (error) {
@@ -139,6 +141,7 @@ export default function GalleryManager() {
             uploadedBy: auth.currentUser.uid,
             createdAt: serverTimestamp(),
             category,
+            branchId: activeBranch,
           });
         } else {
           await addDoc(collection(db, "gallery"), {
@@ -149,10 +152,11 @@ export default function GalleryManager() {
             uploadedBy: auth.currentUser.uid,
             createdAt: serverTimestamp(),
             category,
+            branchId: activeBranch,
           });
         }
         successCount++;
-        await logAudit(user?.email || "Unknown", "UPLOADED", "PHOTO_VIDEO", `Title: ${files.length > 1 ? `${title} ${i + 1}` : title} (${file.name})`);
+        await logAudit(user?.email || "Unknown", "UPLOADED", "PHOTO_VIDEO", `Title: ${files.length > 1 ? `${title} ${i + 1}` : title} (${file.name})`, activeBranch);
       } catch (error) {
         console.error("Upload Error:", error);
         toast.error(`Failed to upload ${file.name}`);
@@ -180,7 +184,8 @@ export default function GalleryManager() {
           size: 14000000, // roughly 14MB
           uploadedBy: auth.currentUser?.uid || "admin",
           createdAt: serverTimestamp(),
-          category: "Accommodation"
+          category: "Accommodation",
+          branchId: activeBranch,
         });
       }
       toast.success("Successfully synced all 10 local 360 photos!");
@@ -198,7 +203,7 @@ export default function GalleryManager() {
       await deleteDoc(doc(db, collectionName, item.id));
       
       toast.success("File deleted successfully");
-      await logAudit(user?.email || "Unknown", "DELETED", "PHOTO_VIDEO", `Title: ${item.title}`);
+      await logAudit(user?.email || "Unknown", "DELETED", "PHOTO_VIDEO", `Title: ${item.title}`, activeBranch);
       fetchMedia();
     } catch (error) {
       console.error("Delete error:", error);
@@ -344,7 +349,7 @@ export default function GalleryManager() {
           <p className="text-gray-500 col-span-3">No media files uploaded yet.</p>
         ) : (
           media.map((item) => {
-            const canDelete = role === "super_admin" || item.uploadedBy === user?.uid;
+            const canDelete = role === "super_admin" || role === "superadmin" || item.uploadedBy === user?.uid;
             const isSelected = selectedItems.includes(item.id);
 
             return (

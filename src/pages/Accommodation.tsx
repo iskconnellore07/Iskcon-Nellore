@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
+import { useBranchName } from "@/hooks/useBranchPrefix";
 import Footer from "@/components/Footer";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
@@ -19,6 +21,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 const RAZORPAY_KEY = "rzp_test_YourTestKeyHere"; // Placeholder
 
 export default function Accommodation() {
+  const branchName = useBranchName();
   const [rooms, setRooms] = useState<any[]>([]);
   const [availableRooms, setAvailableRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,10 @@ export default function Accommodation() {
       toast.error("Please select check-in and check-out dates");
       return;
     }
+    if (checkOut <= checkIn) {
+      toast.error("Check-out date must be strictly after Check-in date");
+      return;
+    }
     
     const filtered = rooms.filter(room => {
       if (room.isBlocked) return false;
@@ -101,6 +108,7 @@ export default function Accommodation() {
   const submitPaymentAndBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) return toast.error("Name and Phone are required.");
+    if (checkOut! <= checkIn!) return toast.error("Invalid Check-out Date.");
     
     setIsSubmitting(true);
     const res = await loadRazorpay();
@@ -117,7 +125,7 @@ export default function Accommodation() {
       key: RAZORPAY_KEY,
       amount: totalAmount * 100, // Amount in paise
       currency: "INR",
-      name: "ISKCON Nellore",
+      name: `ISKCON ${branchName}`,
       description: `Booking for ${selectedRoom.roomNo}`,
       image: "https://iskcon.org/wp-content/uploads/2021/08/iskcon-logo.png",
       handler: async function (response: any) {
@@ -190,7 +198,7 @@ export default function Accommodation() {
       <div className="bg-gradient-to-r from-orange-600 to-red-600 pb-24 pt-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold text-white mb-2">Temple Guest House</h1>
-          <p className="text-orange-100 text-lg">Experience a peaceful stay at ISKCON Nellore</p>
+          <p className="text-orange-100 text-lg">Experience a peaceful stay at ISKCON {branchName}</p>
         </div>
       </div>
 
@@ -209,7 +217,18 @@ export default function Accommodation() {
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkIn} onSelect={(date) => { if(date) setCheckIn(date); }} initialFocus />
+                <Calendar 
+                  mode="single" 
+                  selected={checkIn} 
+                  onSelect={(date) => { 
+                    if(date) {
+                      setCheckIn(date);
+                      setCheckOut(addDays(date, 1));
+                    }
+                  }} 
+                  initialFocus 
+                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -226,7 +245,13 @@ export default function Accommodation() {
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={checkOut} onSelect={(date) => { if(date) setCheckOut(date); }} initialFocus />
+                <Calendar 
+                  mode="single" 
+                  selected={checkOut} 
+                  onSelect={(date) => { if(date) setCheckOut(date); }} 
+                  initialFocus 
+                  disabled={(date) => checkIn ? date <= checkIn : date <= new Date()}
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -254,6 +279,7 @@ export default function Accommodation() {
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-12">
+        <BackToHome />
         <h2 className="text-2xl font-bold mb-6">Available Accommodations</h2>
         
         {loading ? (
@@ -401,7 +427,7 @@ export default function Accommodation() {
                 <form onSubmit={submitPaymentAndBooking} className="space-y-4">
                   <div>
                     <Label>Full Name</Label>
-                    <Input required value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" />
+                    <Input required value={name} onChange={e => setName(e.target.value)} placeholder="Hare Krishna" />
                   </div>
                   <div>
                     <Label>Phone Number</Label>

@@ -1,5 +1,6 @@
 import React from "react";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,9 @@ const SupportUs = () => {
       <Header />
 
       <main className="flex-1">
+        <div className="container mx-auto px-4 pt-4">
+          <BackToHome />
+        </div>
         <section
           className="relative h-72 md:h-80 flex items-center justify-center"
           style={{

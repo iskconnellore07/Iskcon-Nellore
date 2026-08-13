@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
+import BranchLanding from "./pages/BranchLanding";
 import Darshan from "./pages/Darshan";
 import Events from "./pages/Events";
 import About from "./pages/About";
@@ -34,6 +35,18 @@ import FormPage from "./pages/FormPage";
 import AuditLogs from "./pages/admin/AuditLogs";
 import Accommodation from "./pages/Accommodation";
 import AccommodationManager from "./pages/admin/AccommodationManager";
+import BranchManager from "./pages/admin/BranchManager";
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
+
+const GlobalScrollReset = () => {
+  const location = useLocation();
+  useEffect(() => {
+    document.body.style.pointerEvents = "auto";
+    document.body.style.overflow = "auto";
+  }, [location.pathname]);
+  return null;
+};
 
 const queryClient = new QueryClient();
 
@@ -44,41 +57,62 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <GlobalScrollReset />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Index branch="Nellore" />} />
-          <Route path="/gudur" element={<Index branch="Gudur" />} />
-          <Route path="/kavali" element={<Index branch="Kavali" />} />
-          <Route path="/naidupeta" element={<Index branch="Naidupeta" />} />
+          <Route path="/:branch" element={<BranchLanding />} />
           <Route path="/about" element={<About />} />
           <Route path="/darshan" element={<Darshan />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/support-us" element={<SupportUs />} />
           <Route path="/festivals" element={<Festivals />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/annadaan" element={<Annadaan />} />
           <Route path="/goshala" element={<Goshala />} />
-          <Route path="/support-us" element={<SupportUs />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/accommodation" element={<Accommodation />} />
-          <Route path="/forms/:formId" element={<FormPage />} />
           <Route path="/receipt/:orderId" element={<ReceiptDownload />} />
+          <Route path="/accommodation" element={<Accommodation />} />
+
+          {/* Branch-scoped public routes */}
+          <Route path="/:branch/about" element={<About />} />
+          <Route path="/:branch/darshan" element={<Darshan />} />
+          <Route path="/:branch/events" element={<Events />} />
+          <Route path="/:branch/contact" element={<Contact />} />
+          <Route path="/:branch/support-us" element={<SupportUs />} />
+          <Route path="/:branch/festivals" element={<Festivals />} />
+          <Route path="/:branch/courses" element={<Courses />} />
+          <Route path="/:branch/gallery" element={<Gallery />} />
+          <Route path="/:branch/annadaan" element={<Annadaan />} />
+          <Route path="/:branch/goshala" element={<Goshala />} />
+          <Route path="/:branch/accommodation" element={<Accommodation />} />
           
-          {/* ADMIN ROUTES */}
+          <Route path="/form/:slug" element={<FormPage />} />
+
+          {/* Protected Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardOverview />} />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/admin/overview" replace />} />
+            <Route path="overview" element={<DashboardOverview />} />
+            <Route path="users" element={<ManageLogins />} />
             <Route path="devotees" element={<DevoteeAdminPage />} />
-            <Route path="logins" element={<ManageLogins />} />
             <Route path="courses" element={<CourseManager />} />
             <Route path="gallery" element={<GalleryManager />} />
+            <Route path="calendar" element={<FestivalManager />} />
             <Route path="banners" element={<BannerManager />} />
-            <Route path="festivals" element={<FestivalManager />} />
             <Route path="forms" element={<FormManager />} />
-            <Route path="form-responses/:formId" element={<FormResponses />} />
+            <Route path="forms/:formId/responses" element={<FormResponses />} />
             <Route path="accommodation" element={<AccommodationManager />} />
-            <Route path="audit" element={<AuditLogs />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="branches" element={<BranchManager />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

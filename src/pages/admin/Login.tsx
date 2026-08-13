@@ -19,7 +19,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/admin/dashboard";
+  const from = location.state?.from?.pathname || "/admin/overview";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

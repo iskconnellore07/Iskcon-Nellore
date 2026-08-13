@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription }
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -87,6 +88,7 @@ export default function Courses() {
 			<Header />
 			<main className="flex-1 container mx-auto px-4 py-8">
 				<div className="max-w-7xl mx-auto">
+					<BackToHome />
 					<h1 className="text-3xl font-bold mb-8">Courses & Lectures</h1>
 
 					{error ? (

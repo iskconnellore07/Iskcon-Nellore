@@ -17,7 +17,8 @@ import { GalleryPicker } from "@/components/admin/GalleryPicker";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AccommodationManager() {
-  const { role } = useAuth();
+  const { role, dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
   const [rooms, setRooms] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,10 +45,13 @@ export default function AccommodationManager() {
     try {
       const roomsSnapshot = await getDocs(collection(db, "accommodation_rooms"));
       const rData = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRooms(rData.sort((a, b) => a.roomNo.localeCompare(b.roomNo)));
+      const filteredRooms = rData.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setRooms(filteredRooms.sort((a, b) => a.roomNo.localeCompare(b.roomNo)));
 
       const bookingsSnapshot = await getDocs(query(collection(db, "accommodation_bookings"), orderBy("createdAt", "desc")));
-      setBookings(bookingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const bData = bookingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const filteredBookings = bData.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setBookings(filteredBookings);
     } catch (error) {
       console.error("Error fetching accommodation data:", error);
       toast.error("Failed to load data");
@@ -77,6 +81,7 @@ export default function AccommodationManager() {
           isBlocked: false,
           blockedDates: [],
           createdAt: new Date(),
+          branchId: activeBranch,
         });
         toast.success("Room added successfully!");
       }
@@ -244,7 +249,7 @@ export default function AccommodationManager() {
                       <DropdownMenuItem onClick={() => openBlockModal(room)}>
                         <CalendarIcon className="w-4 h-4 mr-2" /> Block Future Dates
                       </DropdownMenuItem>
-                      {role === "super_admin" && (
+                      {(role === "super_admin" || role === "superadmin") && (
                         <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteRoom(room.id)}>
                           <Trash2 className="w-4 h-4 mr-2" /> Delete Room
                         </DropdownMenuItem>

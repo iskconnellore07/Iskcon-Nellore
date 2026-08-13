@@ -24,7 +24,8 @@ interface Festival {
 }
 
 export default function FestivalManager() {
-  const { user, role, permissions } = useAuth();
+  const { user, role, permissions, dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
   const [festivals, setFestivals] = useState<Festival[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -50,7 +51,9 @@ export default function FestivalManager() {
   const fetchGallery = async () => {
     try {
       const snapshot = await getDocs(query(collection(db, "gallery"), orderBy("createdAt", "desc")));
-      setGalleryImages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const filtered = data.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setGalleryImages(filtered);
     } catch (error) {
       console.error("Error fetching gallery:", error);
     }
@@ -59,7 +62,9 @@ export default function FestivalManager() {
   const fetchForms = async () => {
     try {
       const snapshot = await getDocs(query(collection(db, "custom_forms"), orderBy("createdAt", "desc")));
-      setAvailableForms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const filtered = data.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setAvailableForms(filtered);
     } catch (e) {
       console.error(e);
     }
@@ -70,7 +75,8 @@ export default function FestivalManager() {
       setLoading(true);
       const snapshot = await getDocs(query(collection(db, "festivals"), orderBy("date", "asc")));
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Festival[];
-      setFestivals(data);
+      const filtered = data.filter((item: any) => (item as any).branchId === activeBranch || (!(item as any).branchId && activeBranch === 'nellore'));
+      setFestivals(filtered);
     } catch (error) {
       console.error("Error fetching festivals:", error);
       toast.error("Failed to load calendar data.");
@@ -79,7 +85,7 @@ export default function FestivalManager() {
     }
   };
 
-  const hasWriteAccess = role === "admin" || role === "super_admin" || 
+  const hasWriteAccess = role === "admin" || role === "super_admin" || role === "superadmin";
     (permissions?.calendar?.hasAccess && (!permissions.calendar.expiresAt || new Date(permissions.calendar.expiresAt) > new Date()));
 
   const handleCreateFestival = async (e: React.FormEvent) => {
@@ -113,9 +119,10 @@ export default function FestivalManager() {
         imageUrl,
         formId: formId === "none" ? null : formId,
         createdAt: serverTimestamp(),
+        branchId: activeBranch,
       });
 
-      await logAudit(user?.email || "Unknown", "CREATED", "EVENT", `Title: ${title}, Date: ${date}`);
+      await logAudit(user?.email || "Unknown", "CREATED", "EVENT", `Title: ${title}, Date: ${date}`, activeBranch);
 
       toast.success("Festival added to calendar successfully!");
       setTitle("");
@@ -139,7 +146,7 @@ export default function FestivalManager() {
     
     try {
       await deleteDoc(doc(db, "festivals", festival.id));
-      await logAudit(user?.email || "Unknown", "DELETED", "EVENT", `Title: ${festival.title}`);
+      await logAudit(user?.email || "Unknown", "DELETED", "EVENT", `Title: ${festival.title}`, activeBranch);
       toast.success("Festival deleted successfully");
       fetchFestivals();
     } catch (error) {

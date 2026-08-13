@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Trash2, FileSpreadsheet } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function FormResponses() {
+  const { dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
+
   const { formId } = useParams<{ formId: string }>();
   const [form, setForm] = useState<any>(null);
   const [responses, setResponses] = useState<any[]>([]);
@@ -25,8 +29,11 @@ export default function FormResponses() {
       if (formDoc.exists()) setForm({ id: formDoc.id, ...formDoc.data() });
 
       const resSnapshot = await getDocs(query(collection(db, "form_responses"), where("formId", "==", formId)));
-      const resData = resSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let resData = resSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
+      // Client-side filtering by branch
+      resData = resData.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+
       // Sort by submittedAt descending manually since where+orderBy requires composite index
       resData.sort((a, b) => b.submittedAt?.toMillis() - a.submittedAt?.toMillis());
       setResponses(resData);

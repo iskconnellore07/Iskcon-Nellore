@@ -13,6 +13,9 @@ export type UserPermissions = Record<string, PermissionData>;
 interface AuthContextType {
   user: User | null;
   role: string | null;
+  branchId: string | null; // The user's fixed assigned branch
+  dashboardBranchId: string | null; // The currently selected branch in the dashboard
+  setDashboardBranchId: (id: string) => void;
   permissions: UserPermissions | null;
   isActive: boolean;
   isLoading: boolean;
@@ -24,6 +27,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [dashboardBranchId, setDashboardBranchId] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [isActive, setIsActive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,10 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (userDoc.exists()) {
               const data = userDoc.data();
               setRole(data.role || null);
+              setBranchId(data.branchId || null);
+              if (!dashboardBranchId) setDashboardBranchId(data.branchId || 'nellore');
               setPermissions(data.permissions || null);
-              setIsActive(data.isActive !== false); // Default to true if undefined
+              setIsActive(data.isActive !== false);
             } else {
               setRole(null);
+              setBranchId(null);
               setPermissions(null);
               setIsActive(true);
             }
@@ -51,11 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error("Error fetching user role:", error);
           setRole(null);
+          setBranchId(null);
           setPermissions(null);
           setIsLoading(false);
         }
       } else {
         setRole(null);
+        setBranchId(null);
         setPermissions(null);
         setIsLoading(false);
       }
@@ -73,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, permissions, isActive, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, role, branchId, dashboardBranchId, setDashboardBranchId, permissions, isActive, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

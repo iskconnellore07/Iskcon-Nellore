@@ -9,13 +9,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 export default function AuditLogs() {
-  const { role } = useAuth();
+  const { role, dashboardBranchId, branchId, permissions } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Security: Only super_admin can view this page
-  if (role !== "super_admin") {
-    return <Navigate to="/admin/dashboard" />;
+  // Security: Check if user has access
+  const isSuper = role === "super_admin" || role === "superadmin";
+  const hasPermission = isSuper || permissions?.system_logs?.hasAccess;
+  
+  if (!hasPermission) {
+    return <Navigate to="/admin/overview" />;
   }
 
   useEffect(() => {
@@ -26,7 +30,8 @@ export default function AuditLogs() {
     try {
       setLoading(true);
       const snapshot = await getDocs(query(collection(db, "audit_logs"), orderBy("timestamp", "desc")));
-      setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setLogs(logsData.filter((item: any) => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore')));
     } catch (error) {
       console.error("Error fetching logs:", error);
       toast.error("Failed to load audit logs");

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useBranchPrefix, useBranchName } from "@/hooks/useBranchPrefix";
 import logo from "@/assets/iskcon_logo.avif";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,8 @@ import { Menu, Heart, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
 import { API_BASE_URL } from "@/config";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 
 const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -36,11 +39,14 @@ const loadRazorpay = () => {
 
 const Header = () => {
   const location = useLocation();
+  const branchPrefix = useBranchPrefix();
+  const branchName = useBranchName();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [claim80G, setClaim80G] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
   
   // Default branch based on URL
   const getDefaultBranch = () => {
@@ -59,6 +65,22 @@ const Header = () => {
   useEffect(() => {
     setFormData(prev => ({ ...prev, templeLocation: getDefaultBranch() }));
   }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const q = query(collection(db, "branches"), where("isActive", "==", true));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Ensure Nellore is first
+        const sorted = data.sort((a, b) => a.id === 'nellore' ? -1 : b.id === 'nellore' ? 1 : a.name.localeCompare(b.name));
+        setBranches(sorted);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      }
+    };
+    fetchBranches();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
@@ -180,11 +202,11 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to={branchPrefix || "/"} className="flex items-center space-x-2">
              <div className="h-10 w-10 flex items-center justify-center"> 
               <span className="text-primary-foreground font-bold text-lg"><img src={logo} alt="Logo" className="w-full h-full object-contain" /></span>
              </div> 
-            <span className="font-bold text-lg text-foreground hidden sm:inline">ISKCON Nellore</span>
+            <span className="font-bold text-lg text-foreground hidden sm:inline">ISKCON {branchName}</span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
@@ -194,27 +216,33 @@ const Header = () => {
               </button>
               <div className="absolute left-0 top-full mt-2 w-48 rounded-md border border-border bg-background shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <div className="py-2">
-                  <Link to="/" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Nellore</Link>
-                  <Link to="/gudur" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Gudur</Link>
-                  <Link to="/kavali" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Kavali</Link>
-                  <Link to="/naidupeta" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Naidupet</Link>
-                  <a href="https://iskconsullurupet.com/" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">ISKCON Sullurpeta</a>
+                  {branches.map(branch => (
+                    branch.type === 'external' ? (
+                      <a key={branch.id} href={branch.link} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm hover:bg-muted text-foreground">
+                        {branch.name}
+                      </a>
+                    ) : (
+                      <Link key={branch.id} to={branch.id === 'nellore' ? '/' : `/${branch.id}`} className="block px-4 py-2 text-sm hover:bg-muted text-foreground">
+                        {branch.name}
+                      </Link>
+                    )
+                  ))}
                 </div>
               </div>
             </div>
-            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to={branchPrefix || "/"} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Home
             </Link>
-            <Link to="/darshan" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to={`${branchPrefix}/darshan`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Daily Darshan
             </Link>
-            <Link to="/events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to={`${branchPrefix}/events`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Events
             </Link>
-            <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to={`${branchPrefix}/about`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               About
             </Link>
-            <Link to="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to={`${branchPrefix}/contact`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Contact
             </Link>
           </nav>
@@ -243,25 +271,31 @@ const Header = () => {
             <nav className="flex flex-col space-y-3">
               <div className="border-b border-border pb-2 mb-2">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1 mb-2 block">Our Branches</span>
-                <Link to="/" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Nellore</Link>
-                <Link to="/gudur" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Gudur</Link>
-                <Link to="/kavali" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Kavali</Link>
-                <Link to="/naidupeta" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Naidupet</Link>
-                <a href="https://iskconsullurupet.com/" target="_blank" rel="noopener noreferrer" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">ISKCON Sullurpeta</a>
+                {branches.map(branch => (
+                  branch.type === 'external' ? (
+                    <a key={branch.id} href={branch.link} target="_blank" rel="noopener noreferrer" className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2">
+                      {branch.name}
+                    </a>
+                  ) : (
+                    <Link key={branch.id} to={branch.id === 'nellore' ? '/' : `/${branch.id}`} className="block text-sm font-medium text-foreground hover:text-primary transition-colors py-2 pl-2" onClick={() => setIsMenuOpen(false)}>
+                      {branch.name}
+                    </Link>
+                  )
+                ))}
               </div>
-              <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Link to={branchPrefix || "/"} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Home
               </Link>
-              <Link to="/darshan" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Link to={`${branchPrefix}/darshan`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Daily Darshan
               </Link>
-              <Link to="/events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Link to={`${branchPrefix}/events`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Events
               </Link>
-              <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Link to={`${branchPrefix}/about`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 About
               </Link>
-              <Link to="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+              <Link to={`${branchPrefix}/contact`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Contact
               </Link>
               <Button
@@ -306,24 +340,25 @@ const Header = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="temple-location">Temple Location</Label>
-              <Select 
-                value={formData.templeLocation} 
-                onValueChange={(val) => setFormData({ ...formData, templeLocation: val })}
-              >
-                <SelectTrigger id="temple-location">
-                  <SelectValue placeholder="Select temple location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ISKCON Nellore">ISKCON Nellore</SelectItem>
-                  <SelectItem value="ISKCON Naidupet">ISKCON Naidupet</SelectItem>
-                  <SelectItem value="ISKCON Sullurpeta">ISKCON Sullurpeta</SelectItem>
-                  <SelectItem value="ISKCON Kavali">ISKCON Kavali</SelectItem>
-                  <SelectItem value="ISKCON Gudur">ISKCON Gudur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {getDefaultBranch() === 'ISKCON Nellore' && (
+              <div className="grid gap-2">
+                <Label htmlFor="temple-location">Temple Location</Label>
+                <Select 
+                  value={formData.templeLocation} 
+                  onValueChange={(val) => setFormData({ ...formData, templeLocation: val })}
+                >
+                  <SelectTrigger id="temple-location">
+                    <SelectValue placeholder="Select temple location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ISKCON Nellore">ISKCON Nellore</SelectItem>
+                    {branches.filter(b => b.id !== 'nellore').map(b => (
+                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="donor-name">Name <span className="text-red-500">*</span></Label>

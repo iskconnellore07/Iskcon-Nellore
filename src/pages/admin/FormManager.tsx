@@ -26,10 +26,12 @@ interface CustomForm {
   isActive: boolean;
   closesAt: string | null;
   createdAt: any;
+  branchId?: string;
 }
 
 export default function FormManager() {
-  const { role } = useAuth();
+  const { role, dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -41,7 +43,7 @@ export default function FormManager() {
     { id: "f2", label: "Phone Number", type: "tel", required: true }
   ]);
 
-  const hasWriteAccess = role === "admin" || role === "super_admin";
+  const hasWriteAccess = role === "admin" || role === "super_admin" || role === "superadmin";
 
   useEffect(() => {
     fetchForms();
@@ -52,7 +54,8 @@ export default function FormManager() {
       setLoading(true);
       const snapshot = await getDocs(query(collection(db, "custom_forms"), orderBy("createdAt", "desc")));
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CustomForm[];
-      setForms(data);
+      const filtered = data.filter(item => item.branchId === activeBranch || (!item.branchId && activeBranch === 'nellore'));
+      setForms(filtered);
     } catch (error) {
       console.error("Error fetching forms:", error);
       toast.error("Failed to load forms.");
@@ -86,9 +89,10 @@ export default function FormManager() {
         fields,
         isActive: true,
         closesAt: closesAt ? new Date(closesAt).toISOString() : null,
+        branchId: activeBranch,
         createdAt: serverTimestamp(),
       });
-      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "CREATED", "FORM", `Title: ${title}`);
+      await logAudit(role === "super_admin" || role === "superadmin" ? "SuperAdmin" : "Admin", "CREATED", "FORM", `Title: ${title}`, activeBranch);
       toast.success("Form created successfully!");
       setTitle("");
       setDescription("");
@@ -103,7 +107,7 @@ export default function FormManager() {
   const toggleFormStatus = async (form: CustomForm) => {
     try {
       await updateDoc(doc(db, "custom_forms", form.id), { isActive: !form.isActive });
-      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "UPDATED", "FORM", `Toggled status to ${!form.isActive} for: ${form.title}`);
+      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "UPDATED", "FORM", `Toggled status to ${!form.isActive} for: ${form.title}`, activeBranch);
       toast.success(`Form is now ${!form.isActive ? 'Active' : 'Closed'}`);
       fetchForms();
     } catch (error) {
@@ -115,7 +119,7 @@ export default function FormManager() {
     if (!confirm("Delete this form? This will NOT delete existing responses, but the form will be gone.")) return;
     try {
       await deleteDoc(doc(db, "custom_forms", formId));
-      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "DELETED", "FORM", `Deleted form ID: ${formId}`);
+      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "DELETED", "FORM", `Deleted form ID: ${formId}`, activeBranch);
       toast.success("Form deleted");
       fetchForms();
     } catch (error) {
@@ -211,7 +215,7 @@ export default function FormManager() {
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 line-clamp-2">{form.description}</p>
               <div className="text-xs text-gray-500">
-                <p>{form.fields.length} fields</p>
+                <p>{form.fields?.length || 0} fields</p>
                 {form.closesAt && <p>Closes: {new Date(form.closesAt).toLocaleString()}</p>}
               </div>
               <div className="flex flex-col gap-2 pt-4 border-t">
@@ -221,7 +225,7 @@ export default function FormManager() {
                   </a>
                 </Button>
                 <Button variant="secondary" className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100" asChild>
-                  <a href={`/admin/form-responses/${form.id}`}>
+                  <a href={`/admin/forms/${form.id}/responses`}>
                     <FileSpreadsheet className="w-4 h-4 mr-2" /> View Responses & CSV
                   </a>
                 </Button>

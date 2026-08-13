@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Video } from "lucide-react";
@@ -23,6 +24,9 @@ const Darshan = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
+        <div className="container mx-auto px-4 pt-4">
+          <BackToHome />
+        </div>
         <DynamicBanner location="darshan">
           <section className="py-12 bg-muted">
             <div className="container mx-auto px-4">

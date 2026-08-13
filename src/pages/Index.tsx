@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-temple.jpg";
 import { Link } from "react-router-dom";
+import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 import ServiceTiles from "@/components/ServiceTiles";
 import UpcomingEvents from "@/components/UpcomingEvents";
 import VirtualTour from "@/components/VirtualTour";
 
 const Index = ({ branch = "Nellore" }: { branch?: string }) => {
+  const branchPrefix = useBranchPrefix();
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -33,13 +35,13 @@ const Index = ({ branch = "Nellore" }: { branch?: string }) => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button variant="hero" size="lg" asChild>
-                  <Link to="/about">
+                  <Link to={`${branchPrefix}/about`}>
                     Learn More
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
-                  <Link to="/darshan">View Schedule</Link>
+                  <Link to={`${branchPrefix}/darshan`}>View Schedule</Link>
                 </Button>
               </div>
             </div>

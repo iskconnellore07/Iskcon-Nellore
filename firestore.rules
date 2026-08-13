@@ -9,13 +9,17 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
+      );
     }
 
     function isAdmin() {
       return isAuthenticated() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
       );
     }
 
@@ -23,7 +27,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sevakas' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
       );
     }
 
@@ -103,6 +108,12 @@ service cloud.firestore {
       allow create, delete: if isAuthenticated();
       allow update: if false;
     }
+
+    // BRANCHES COLLECTION (Multi-tenant settings)
+    match /branches/{branchId} {
+      allow read: if true; // Public needs to read branches for routing and settings
+      allow write: if isSuperAdmin(); // Only Master Super Admins can write
+    }
     
     // ACCOMMODATION ROOMS
     match /accommodation_rooms/{roomId} {
@@ -118,7 +129,7 @@ service cloud.firestore {
     }
     // TRANSACTIONS COLLECTION (Donations & Festivals)
     match /transactions/{transactionId} {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated();
       allow create: if true;
       allow update, delete: if false;
     }

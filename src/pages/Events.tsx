@@ -2,7 +2,9 @@ import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
+import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, MapPin, Clock, Users } from "lucide-react";
@@ -82,6 +84,7 @@ const WEEKLY_EVENTS = [
 export default function Events() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date("2026-09-04")); // Default to Janmashtami month
   const [month, setMonth] = useState<Date>(new Date("2026-09-01"));
+  const branchPrefix = useBranchPrefix();
 
   // Check if a date has a festival
   const getFestivalForDate = (day: Date) => {
@@ -96,6 +99,7 @@ export default function Events() {
       <main className="flex-1 bg-muted/30">
         <section className="py-12">
           <div className="container mx-auto px-4">
+            <BackToHome />
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Vaishnava Calendar & Events</h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -166,7 +170,7 @@ export default function Events() {
                       </div>
                       <div className="pt-4">
                         <Button asChild size="lg" className="w-full sm:w-auto font-semibold">
-                          <Link to="/festivals">Book Festival Seva / Slot</Link>
+                          <Link to={`${branchPrefix}/festivals`}>Book Festival Seva / Slot</Link>
                         </Button>
                       </div>
                     </CardContent>

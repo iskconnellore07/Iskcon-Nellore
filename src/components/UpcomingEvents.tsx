@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useBranchPrefix, useBranchName } from "@/hooks/useBranchPrefix";
 
 interface Festival {
   id: string;
@@ -19,6 +20,9 @@ interface Festival {
 const UpcomingEvents = () => {
   const [events, setEvents] = useState<Festival[]>([]);
   const [loading, setLoading] = useState(true);
+  const branchPrefix = useBranchPrefix();
+  const branchName = useBranchName();
+  const branchSlug = branchPrefix.replace('/', '') || 'nellore';
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -26,15 +30,20 @@ const UpcomingEvents = () => {
         const snapshot = await getDocs(query(collection(db, "festivals"), orderBy("date", "asc")));
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Festival[];
         
+        // Filter events by branch
+        const filteredData = data.filter((item: any) => 
+          item.branchId === branchSlug || (!item.branchId && branchSlug === 'nellore')
+        );
+        
         // Filter for upcoming events only (or just show the next 3)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const upcoming = data.filter(event => new Date(event.date) >= today).slice(0, 3);
+        const upcoming = filteredData.filter(event => new Date(event.date) >= today).slice(0, 3);
         
         // If no upcoming, just show the last 3 added to avoid empty states
-        if (upcoming.length === 0 && data.length > 0) {
-          setEvents(data.slice(-3).reverse());
+        if (upcoming.length === 0 && filteredData.length > 0) {
+          setEvents(filteredData.slice(-3).reverse());
         } else {
           setEvents(upcoming);
         }
@@ -55,7 +64,7 @@ const UpcomingEvents = () => {
             <h2 className="text-3xl md:text-4xl font-bold mb-2">Upcoming Events</h2>
             <p className="text-muted-foreground">Join us for spiritual programs and celebrations</p>
           </div>
-          <Link to="/events">
+          <Link to={`${branchPrefix}/events`}>
             <Button variant="outline">View All</Button>
           </Link>
         </div>
@@ -94,7 +103,7 @@ const UpcomingEvents = () => {
                     )}
                     <div className="flex items-center text-muted-foreground">
                       <MapPin className="w-4 h-4 mr-3 text-primary" />
-                      <span>{event.location || "ISKCON Nellore"}</span>
+                      <span>{event.location || `ISKCON ${branchName}`}</span>
                     </div>
                   </div>
                   {event.formId && (

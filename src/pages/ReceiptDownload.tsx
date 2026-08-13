@@ -34,6 +34,19 @@ export default function ReceiptDownload() {
         }
 
         const data = querySnapshot.docs[0].data();
+
+        let branchSettings: any = null;
+        if (data.location) {
+          try {
+            const branchQ = query(collection(db, "branches"), where("name", "==", data.location));
+            const branchSnap = await getDocs(branchQ);
+            if (!branchSnap.empty) {
+              branchSettings = branchSnap.docs[0].data();
+            }
+          } catch (e) {
+            console.error("Failed to fetch branch settings for receipt", e);
+          }
+        }
         
         const rData = {
           id: data.orderId.replace('order_', ''),
@@ -48,7 +61,11 @@ export default function ReceiptDownload() {
           claim80G: data.claim80G,
           panOrGst: data.pan,
           slot: data.slot,
-          people: data.people ? Number(data.people) : undefined
+          people: data.people ? Number(data.people) : undefined,
+          branchName: branchSettings?.name,
+          branchAddress: branchSettings?.address,
+          branchPhone: branchSettings?.phone,
+          branchEmail: branchSettings?.email
         };
 
         setReceiptData(rData);

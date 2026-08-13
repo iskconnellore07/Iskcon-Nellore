@@ -19,6 +19,10 @@ export interface ReceiptData {
   type: ReceiptType;
   claim80G?: boolean;
   panOrGst?: string;
+  branchName?: string;
+  branchAddress?: string;
+  branchPhone?: string;
+  branchEmail?: string;
 }
 
 // Convert an image URL to a base64 string and get its dimensions
@@ -197,12 +201,17 @@ export async function generate80GReceipt(data: ReceiptData) {
   doc.setFontSize(10);
   doc.text("Founder-Acharya: His Divine Grace A.C. Bhaktivedanta Swami Prabhupada", width / 2, y, { align: "center" });
   
+  const bName = data.branchName || "ISKCON Nellore";
+  const bAddress = data.branchAddress || "ISKCON City, Hare Krishna Road, Nellore 524004 A.P.";
+  const bPhone = data.branchPhone || "9985058550 / 7018620155";
+  const bEmail = data.branchEmail || "sukadevaswami@gmail.com";
+
   y += 10;
   doc.setFont("times", "normal");
   doc.setFontSize(10);
-  doc.text("Branch: ISKCON City, Hare Krishna Road, Nellore 524004 A.P.", width / 2, y, { align: "center" });
+  doc.text(`Branch: ${bName}, ${bAddress}`, width / 2, y, { align: "center" });
   y += 5;
-  doc.text("Phone: 9985058550 / 7018620155  |  E-mail: sukadevaswami@gmail.com", width / 2, y, { align: "center" });
+  doc.text(`Phone: ${bPhone}  |  E-mail: ${bEmail}`, width / 2, y, { align: "center" });
 
   y += 10;
   doc.setFont("times", "bold");

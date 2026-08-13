@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Eye, Heart, Users, ShoppingBag, Book, HandHeart, Gift, Image } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 
 const services = [
   {
@@ -62,6 +63,8 @@ const services = [
 ];
 
 const ServiceTiles = () => {
+  const branchPrefix = useBranchPrefix();
+
   return (
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
@@ -76,7 +79,7 @@ const ServiceTiles = () => {
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
-              <Link key={index} to={service.link}>
+              <Link key={index} to={`${branchPrefix}${service.link}`}>
                 <Card className="h-full hover:shadow-elevated transition-all duration-300 cursor-pointer group bg-gradient-card">
                   <CardContent className="p-6 text-center">
                     <div className="mb-4 flex justify-center">
@@ -98,3 +101,4 @@ const ServiceTiles = () => {
 };
 
 export default ServiceTiles;
+

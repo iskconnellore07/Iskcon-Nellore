@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,9 @@ export default function CourseManager() {
   const [adding, setAdding] = useState(false);
   const [role, setRole] = useState("Admin");
   
+  const { dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
+  
   const [title, setTitle] = useState("");
   const [link, setLink] = useState("");
   const [series, setSeries] = useState("");
@@ -31,7 +35,8 @@ export default function CourseManager() {
       const q = query(collection(db, "courses"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCourses(data);
+      const filtered = data.filter((c: any) => c.branchId === activeBranch || (!c.branchId && activeBranch === 'nellore'));
+      setCourses(filtered);
     } catch (error) {
       console.error("Error fetching courses:", error);
       toast.error("Failed to load courses");
@@ -52,8 +57,9 @@ export default function CourseManager() {
         series: series.trim() || "General Lectures",
         createdBy: auth.currentUser?.uid,
         createdAt: serverTimestamp(),
+        branchId: activeBranch,
       });
-      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "CREATED", "COURSE", `Title: ${title} (${series || "General Lectures"})`);
+      await logAudit(role === "super_admin" || role === "superadmin" ? "SuperAdmin" : "Admin", "CREATED", "COURSE", `Title: ${title} (${series || "General Lectures"})`, activeBranch);
       
       toast.success("Course added successfully!");
       setTitle("");
@@ -73,7 +79,7 @@ export default function CourseManager() {
     
     try {
       await deleteDoc(doc(db, "courses", course.id));
-      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "DELETED", "COURSE", `Deleted course: ${course.Title}`);
+      await logAudit(role === "super_admin" ? "SuperAdmin" : "Admin", "DELETED", "COURSE", `Deleted course: ${course.Title}`, activeBranch);
       toast.success("Course deleted successfully");
       fetchCourses();
     } catch (error) {
@@ -100,6 +106,7 @@ export default function CourseManager() {
           Link: course.Link,
           createdBy: auth.currentUser?.uid,
           createdAt: serverTimestamp(),
+          branchId: activeBranch,
         });
       }
       toast.success("Legacy data migrated successfully!");

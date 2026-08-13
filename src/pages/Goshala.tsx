@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
 import heroImage from "@/assets/hero-temple.jpg";
 import { DynamicBanner } from "@/components/DynamicBanner";
@@ -8,6 +9,9 @@ const Goshala = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
+        <div className="container mx-auto px-4 pt-4">
+          <BackToHome />
+        </div>
         {/* Banner Section */}
         <DynamicBanner location="goshala">
           <section className="relative h-[300px] flex items-center justify-center overflow-hidden">

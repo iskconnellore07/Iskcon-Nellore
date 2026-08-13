@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchDevotees,
   fetchDevotee,
@@ -44,6 +45,9 @@ export default function DevoteeAdmin() {
   const [devoteStats, setDevoteeStats] = useState({ active: 0, inactive: 0, paused: 0 });
   const [msgStats, setMsgStats] = useState({ sent: 0, failed: 0, pending: 0 });
 
+  const { dashboardBranchId, branchId } = useAuth();
+  const activeBranch = dashboardBranchId || branchId || "nellore";
+
   // Load devotees and stats on mount
   useEffect(() => {
     loadData();
@@ -73,9 +77,9 @@ export default function DevoteeAdmin() {
     try {
       setLoading(true);
       const [devoteeData, stats, msgStats] = await Promise.all([
-        fetchDevotees(),
-        getDevoteeStats(),
-        getSmsStats(),
+        fetchDevotees(undefined, activeBranch),
+        getDevoteeStats(activeBranch),
+        getSmsStats(activeBranch),
       ]);
       setDevotees(devoteeData);
       setDevoteeStats(stats);
@@ -96,7 +100,7 @@ export default function DevoteeAdmin() {
     try {
       const [donations, logs] = await Promise.all([
         fetchDonationHistory(devotee.id),
-        fetchSmsLogs(devotee.id),
+        fetchSmsLogs(devotee.id, activeBranch),
       ]);
       setDonationHistory(donations);
       setSmsLogs(logs);
@@ -109,20 +113,16 @@ export default function DevoteeAdmin() {
     }
   }
 
-  async function handleSaveDevotee(data: Omit<Devotee, "id" | "created_at" | "updated_at">) {
+  async function handleSaveDevotee(data: any) {
     try {
-      if (selectedDevotee?.id) {
-        await updateDevotee(selectedDevotee.id, data);
-        toast({
-          title: "Success",
-          description: "Devotee updated successfully",
-        });
+      if (selectedDevotee) {
+        const updated = await updateDevotee(selectedDevotee.id, data);
+        setDevotees(devotees.map(d => d.id === updated.id ? updated : d));
+        toast({ title: "Success", description: "Devotee updated successfully" });
       } else {
-        await createDevotee(data);
-        toast({
-          title: "Success",
-          description: "Devotee created successfully",
-        });
+        const created = await createDevotee(data, activeBranch);
+        setDevotees([created, ...devotees]);
+        toast({ title: "Success", description: "Devotee created successfully" });
       }
       await loadData();
       setShowForm(false);

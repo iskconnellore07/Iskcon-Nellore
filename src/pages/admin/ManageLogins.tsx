@@ -41,25 +41,43 @@ const MODULES = [
 ];
 
 export default function ManageLogins() {
-  const { role: currentUserRole } = useAuth();
+  const { role: currentUserRole, branchId: currentUserBranchId, dashboardBranchId } = useAuth();
   
   // Create User State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
+  const [branchId, setBranchId] = useState("");
   const [creating, setCreating] = useState(false);
   
   // List Users State
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   
   // Edit Permissions State
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
   const [tempPermissions, setTempPermissions] = useState<UserPermissions>({});
+  const [editRole, setEditRole] = useState("");
+  const [editBranchId, setEditBranchId] = useState("");
+  const isMasterSuperAdmin = (currentUserRole === 'super_admin' || currentUserRole === 'superadmin') && (!currentUserBranchId || currentUserBranchId === 'nellore');
 
   useEffect(() => {
     fetchUsers();
+    fetchBranches();
   }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const snapshot = await getDocs(query(collection(db, "branches"), orderBy("createdAt", "asc")));
+      const data = snapshot.docs
+        .filter(doc => doc.data().type !== 'external')
+        .map(doc => ({ id: doc.id, name: doc.data().name }));
+      setBranches(data);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -91,9 +109,16 @@ export default function ManageLogins() {
         defaultPermissions[m.id] = { hasAccess: true, expiresAt: null };
       });
 
+      // Only master super admin can assign users to other branches or global (null)
+      // Otherwise, force it to the creator's branch
+      const assignedBranchId = isMasterSuperAdmin 
+        ? (branchId || null) 
+        : (userBranchId || "nellore");
+
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
         role,
+        branchId: assignedBranchId,
         permissions: defaultPermissions,
         createdAt: new Date().toISOString()
       });
@@ -104,6 +129,7 @@ export default function ManageLogins() {
       setEmail("");
       setPassword("");
       setRole("admin");
+      setBranchId("");
       fetchUsers();
     } catch (error: any) {
       toast.error(error.message || "Failed to create user.");
@@ -114,6 +140,8 @@ export default function ManageLogins() {
 
   const openEditor = (user: UserRecord) => {
     setEditingUser(user);
+    setEditRole(user.role);
+    setEditBranchId(user.branchId || "");
     // Initialize permissions if they don't exist
     const initialPerms = { ...(user.permissions || {}) };
     MODULES.forEach(m => {
@@ -143,7 +171,9 @@ export default function ManageLogins() {
     
     try {
       await updateDoc(doc(db, "users", editingUser.id), {
-        permissions: tempPermissions
+        permissions: tempPermissions,
+        role: editRole,
+        branchId: editBranchId || null
       });
       toast.success("Permissions updated successfully!");
       setEditingUser(null);
@@ -171,7 +201,7 @@ export default function ManageLogins() {
     }
   };
 
-  if (currentUserRole !== "super_admin") {
+  if (currentUserRole !== "super_admin" && currentUserRole !== "superadmin") {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
@@ -214,11 +244,24 @@ export default function ManageLogins() {
                   <Label htmlFor="role">Base Role</Label>
                   <select id="role" value={role} onChange={(e) => setRole(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="admin">Admin</option>
+                    {isMasterSuperAdmin && <option value="superadmin">Super Admin</option>}
                     <option value="sevakas">Sevaka</option>
                     <option value="devotees">Devotee</option>
                     <option value="media_team">Media Team</option>
                   </select>
                 </div>
+
+                {isMasterSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="branchId">Branch Assignment</Label>
+                    <select id="branchId" value={branchId} onChange={(e) => setBranchId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <option value="">No Branch (Global Access)</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </CardContent>
               <CardFooter>
                 <Button type="submit" disabled={creating} className="w-full">
@@ -246,6 +289,30 @@ export default function ManageLogins() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                <div className="p-4 bg-gray-50 border-b flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Base Role</Label>
+                    <select id="role" value={editRole} onChange={(e) => setEditRole(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm">
+                      <option value="admin">Admin</option>
+                      {isMasterSuperAdmin && <option value="superadmin">Super Admin</option>}
+                      <option value="sevakas">Sevaka</option>
+                      <option value="devotees">Devotee</option>
+                      <option value="media_team">Media Team</option>
+                    </select>
+                  </div>
+
+                  {isMasterSuperAdmin && (
+                    <div className="space-y-2">
+                      <Label htmlFor="branchId">Branch Assignment</Label>
+                      <select id="branchId" value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm">
+                        <option value="">No Branch (Global Access)</option>
+                        {branches.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
                 <div className="divide-y">
                   {MODULES.map((module) => {
                     const perm = tempPermissions[module.id] || { hasAccess: false, expiresAt: null };
@@ -324,7 +391,11 @@ export default function ManageLogins() {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((u) => (
+                        {users.filter(u => {
+                          const activeBranch = dashboardBranchId || userBranchId || "nellore";
+                          if (isMasterSuperAdmin && !dashboardBranchId) return true; // Master sees all if not filtering
+                          return u.branchId === activeBranch || (!u.branchId && activeBranch === 'nellore');
+                        }).map((u) => (
                           <tr key={u.id} className={`border-b hover:bg-gray-50 ${u.isActive === false ? 'bg-red-50/50' : 'bg-white'}`}>
                             <td className="px-4 py-3 font-medium text-gray-900">
                               {u.email} 
@@ -334,7 +405,7 @@ export default function ManageLogins() {
                             <td className="px-4 py-3">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="flex items-center justify-end space-x-2 flex-nowrap">
-                                {u.role !== 'super_admin' && (
+                                {u.role !== 'super_admin' && u.role !== 'superadmin' && (
                                   <>
                                     <Button variant="outline" size="sm" onClick={() => openEditor(u)}>Manage</Button>
                                     <Button 
@@ -347,7 +418,7 @@ export default function ManageLogins() {
                                     </Button>
                                   </>
                                 )}
-                                {u.role === 'super_admin' && <span className="text-gray-400 italic">Uneditable</span>}
+                                {(u.role === 'super_admin' || u.role === 'superadmin') && <span className="text-gray-400 italic">Uneditable</span>}
                               </div>
                             </td>
                           </tr>
