@@ -34,7 +34,7 @@ export const handler: Handler = async (event, context) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { name, phone, mobile, email, festival, date, slot, people, amount, claim80G, pan, address, templeLocation } = body;
+    const { name, phone, mobile, email, festival, date, slot, people, amount, claim80G, pan, address, templeLocation, pincode } = body;
     const phoneNumber = phone || mobile;
     const amountNumber = Number(amount);
 
@@ -121,6 +121,7 @@ export const handler: Handler = async (event, context) => {
           claim80G,
           pan,
           address,
+          pincode: pincode || '',
           templeLocation: templeLocation || 'ISKCON Nellore'
         }
       }),

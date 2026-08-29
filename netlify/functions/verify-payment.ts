@@ -102,6 +102,7 @@ export const handler: Handler = async (event) => {
             people: order.people || '',
             pan: order.pan || '',
             address: order.address || '',
+            pincode: order.pincode || '',
             claim80G: order.claim80G ? true : false
           })
         });
@@ -125,6 +126,7 @@ export const handler: Handler = async (event) => {
         people: order.people || '',
         pan: order.pan || '',
         address: order.address || '',
+        pincode: order.pincode || '',
         claim80G: order.claim80G ? true : false,
         timestamp: new Date().toISOString()
       };

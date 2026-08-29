@@ -85,7 +85,7 @@ const Header = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
     if (e.target.name === "pan") {
-      val = val.toUpperCase().replace(/\s+/g, "");
+      val = val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15);
     }
     setFormData({ ...formData, [e.target.name]: val });
   };
@@ -105,9 +105,16 @@ const Header = () => {
       return;
     }
     
-    if (claim80G && Number(amount) >= 2000 && !formData.pan?.trim()) {
-      alert("PAN Number is required for 80G Receipt.");
-      return;
+    if (claim80G && Number(amount) >= 2000) {
+      const panVal = formData.pan?.trim() || "";
+      if (!panVal) {
+        alert("PAN/GST Number is required for 80G Receipt.");
+        return;
+      }
+      if (panVal.length !== 10 && panVal.length !== 15) {
+        alert("Please enter a valid 10-digit PAN (e.g. ABCDE1234F) or 15-digit GST (e.g. 37AAAATI0017P9Z).");
+        return;
+      }
     }
 
     setIsLoading(true);

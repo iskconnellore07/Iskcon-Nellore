@@ -55,6 +55,7 @@ type Booking = {
   createdAt: string;
   claim80G?: boolean;
   panOrGst?: string;
+  pan?: string;
 };
 
 const FESTIVALS = [
@@ -106,10 +107,21 @@ export default function Festivals() {
   const [slot, setSlot] = useState("06:00 - 07:00");
   const [people, setPeople] = useState<number>(1);
   const routerLocation = useLocation();
+
+  // Default branch based on URL
+  const getDefaultBranch = () => {
+    const path = routerLocation.pathname.toLowerCase();
+    if (path.includes('gudur')) return 'ISKCON Gudur';
+    if (path.includes('kavali')) return 'ISKCON Kavali';
+    if (path.includes('naidupeta')) return 'ISKCON Naidupet';
+    if (path.includes('sullurpeta')) return 'ISKCON Sullurpeta';
+    return 'ISKCON Nellore';
+  };
+
   const branchPrefix = useBranchPrefix();
   const branchSlug = branchPrefix.replace('/', '') || 'nellore';
 
-  const [location, setLocation] = useState("ISKCON Nellore");
+  const [location, setLocation] = useState(getDefaultBranch());
   const [message, setMessage] = useState<string | null>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
 
@@ -143,7 +155,13 @@ export default function Festivals() {
     if (!name.trim()) return "Please enter your name.";
     if (!phone.trim()) return "Please enter your phone number.";
     if (!date) return "Please choose a date.";
-    if (claim80G && !pan.trim()) return "PAN Number is required for 80G Receipt.";
+    if (claim80G) {
+      const panVal = pan.trim();
+      if (!panVal) return "PAN / GST Number is required for 80G Receipt.";
+      if (panVal.length !== 10 && panVal.length !== 15) {
+        return "Please enter a valid 10-digit PAN (e.g. ABCDE1234F) or 15-digit GST (e.g. 37AAAATI0017P9Z).";
+      }
+    }
     return null;
   }
 
@@ -171,6 +189,7 @@ export default function Festivals() {
       id: booking.id,
       date: new Date(booking.createdAt).toLocaleDateString(),
       name: booking.name,
+      phone: booking.phone,
       amount: booking.amount || 0,
       status: "PAID" as const,
       type: "FESTIVAL" as const,
@@ -210,6 +229,7 @@ export default function Festivals() {
       amount: getAmount(festival, Number(people)),
       claim80G,
       panOrGst: pan.trim() ? pan.toUpperCase().replace(/\s+/g, "") : undefined,
+      pan: pan.trim() ? pan.toUpperCase().replace(/\s+/g, "") : undefined,
     };
 
     setPreviewBooking(preview);
@@ -231,7 +251,7 @@ export default function Festivals() {
           orderId: paymentResult.orderId, 
           paymentId: paymentResult.paymentId, 
           signature: paymentResult.signature,
-          orderData: paymentResult.originalData 
+          orderData: previewData 
         }),
       });
       const data = await resp.json();
@@ -261,6 +281,7 @@ export default function Festivals() {
       createdAt: new Date().toISOString(),
       claim80G: previewData.claim80G,
       panOrGst: previewData.panOrGst,
+      pan: previewData.pan,
     };
 
     const existing = JSON.parse(localStorage.getItem("festival_bookings") || "[]") as Booking[];
@@ -497,7 +518,7 @@ export default function Festivals() {
                       <Input 
                         id="fest-pan" 
                         value={pan} 
-                        onChange={(e) => setPan(e.target.value.toUpperCase().replace(/\s+/g, ""))} 
+                        onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15))} 
                         placeholder="ABCDE1234F" 
                         required 
                         className="mt-1"

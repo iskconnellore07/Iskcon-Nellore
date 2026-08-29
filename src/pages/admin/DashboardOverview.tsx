@@ -63,16 +63,36 @@ export default function DashboardOverview() {
       return;
     }
 
-    // Determine all unique keys to use as headers
-    const headers = Array.from(new Set(dataToExport.flatMap(Object.keys)));
+    // Fixed clean headers in the pattern requested by the user
+    const headers = [
+      "Name",
+      "Phone Number",
+      "Email",
+      "Address",
+      "Pin Code",
+      "Amount",
+      "PAN",
+      "Transaction ID",
+      "Transaction Type"
+    ];
     
     // Convert data to CSV string
     const csvRows = [];
     csvRows.push(headers.join(",")); // Header row
     
     for (const row of dataToExport) {
-      const values = headers.map(header => {
-        const escaped = ('' + (row[header] || '')).replace(/"/g, '""');
+      const values = [
+        row.name || "",
+        row.phone || row.mobile || "",
+        row.email || "",
+        row.address || "",
+        row.pincode || row.pinCode || "",
+        row.amount || "",
+        row.pan || row.panOrGst || row["PAN"] || row["PAN "] || "",
+        row.paymentId || "",
+        row.festival || (row.formType === "Donation" ? "General Donation" : row.formType) || "General Donation"
+      ].map(val => {
+        const escaped = ('' + val).replace(/"/g, '""');
         return `"${escaped}"`;
       });
       csvRows.push(values.join(","));

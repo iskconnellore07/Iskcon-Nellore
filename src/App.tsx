@@ -29,6 +29,7 @@ import GalleryManager from "./pages/admin/GalleryManager";
 import FestivalManager from "./pages/admin/FestivalManager";
 import DashboardLayout from "./pages/admin/DashboardLayout";
 import BannerManager from "./pages/admin/BannerManager";
+import OfflineDonations from "./pages/admin/OfflineDonations";
 import FormManager from "./pages/admin/FormManager";
 import FormResponses from "./pages/admin/FormResponses";
 import FormPage from "./pages/FormPage";
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="gallery" element={<GalleryManager />} />
             <Route path="calendar" element={<FestivalManager />} />
             <Route path="banners" element={<BannerManager />} />
+            <Route path="offline-donations" element={<OfflineDonations />} />
             <Route path="forms" element={<FormManager />} />
             <Route path="forms/:formId/responses" element={<FormResponses />} />
             <Route path="accommodation" element={<AccommodationManager />} />

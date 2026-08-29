@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield, UserPlus, Save, Trash2, Edit, LayoutDashboard, Users, PlaySquare, Image, Calendar, FileText, X, AlertCircle, Home, UserCog, User, Clock } from "lucide-react";
+import { Shield, UserPlus, Save, Trash2, Edit, LayoutDashboard, Users, PlaySquare, Image, Calendar, FileText, X, AlertCircle, Home, UserCog, User, Clock, BookHeart } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, getDocs, collection, query, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
@@ -32,6 +32,7 @@ interface UserRecord {
 const MODULES = [
   { id: "overview", name: "Overview (Donations)", icon: LayoutDashboard },
   { id: "devotees", name: "Devotee Management", icon: Users },
+  { id: "offline_donations", name: "Offline Donations", icon: BookHeart },
   { id: "courses", name: "Course Manager", icon: PlaySquare },
   { id: "gallery", name: "Gallery Manager", icon: Image },
   { id: "calendar", name: "Calendar & Festivals", icon: Calendar },
@@ -113,7 +114,7 @@ export default function ManageLogins() {
       // Otherwise, force it to the creator's branch
       const assignedBranchId = isMasterSuperAdmin 
         ? (branchId || null) 
-        : (userBranchId || "nellore");
+        : (currentUserBranchId || "nellore");
 
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
