@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, Users, UserPlus, LogOut, Menu, X, BookHeart, Image, Calendar, AlertCircle, PlaySquare, FileText, ShieldAlert, Home, MapPin } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, LogOut, Menu, X, BookHeart, Image, Calendar, AlertCircle, PlaySquare, FileText, ShieldAlert, Home, MapPin, Heart, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
@@ -61,6 +61,8 @@ export default function DashboardLayout() {
     { name: "Calendar & Festivals", href: "/admin/calendar", icon: Calendar, show: checkAccess('calendar') },
     { name: "Accommodation", href: "/admin/accommodation", icon: Home, show: checkAccess('accommodation') || role === 'admin' || role === 'super_admin' || role === 'superadmin' },
     { name: "Form Builder", href: "/admin/forms", icon: FileText, show: checkAccess('calendar') || role === 'admin' || role === 'super_admin' || role === 'superadmin' },
+    { name: "Volunteer Registration", href: "/admin/volunteers", icon: Heart, show: checkAccess('volunteer_registration') },
+    { name: "Feedback Section", href: "/admin/feedback", icon: MessageSquare, show: checkAccess('feedback') },
     { name: "Audit Logs", href: "/admin/audit-logs", icon: ShieldAlert, show: role === "super_admin" || role === "superadmin" },
   ].filter(item => item.show);
 
@@ -102,6 +104,8 @@ export default function DashboardLayout() {
     { name: "Accommodation", href: "/admin/accommodation", show: true },
     { name: "Form Builder", href: "/admin/forms", show: true },
     { name: "Form Responses", href: "/admin/forms/", show: true },
+    { name: "Volunteer Registration", href: "/admin/volunteers", show: checkAccess('volunteer_registration') },
+    { name: "Feedback Section", href: "/admin/feedback", show: checkAccess('feedback') },
     { name: "Audit Logs", href: "/admin/audit-logs", show: role === "super_admin" || role === "superadmin" },
   ].find(n => currentPath.startsWith(n.href));
 

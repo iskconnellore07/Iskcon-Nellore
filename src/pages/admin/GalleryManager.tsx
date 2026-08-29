@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, UploadCloud, Image as ImageIcon, Video, Copy, Check } from "lucide-react";
+import { Trash2, UploadCloud, Image as ImageIcon, Video, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { logAudit } from "@/lib/audit";
@@ -18,6 +18,7 @@ interface MediaItem {
   type: "image" | "video";
   uploadedBy: string;
   size?: number;
+  hidden?: boolean;
 }
 
 export default function GalleryManager() {
@@ -255,6 +256,25 @@ export default function GalleryManager() {
     }
   };
 
+  const toggleHide = async (item: MediaItem) => {
+    try {
+      const collectionName = item.type === "video" ? "videos" : "gallery";
+      const newHiddenState = !item.hidden;
+      
+      await updateDoc(doc(db, collectionName, item.id), {
+        hidden: newHiddenState
+      });
+      
+      toast.success(newHiddenState ? "Media hidden successfully" : "Media unhidden successfully");
+      await logAudit(user?.email || "Unknown", newHiddenState ? "HIDDEN" : "UNHIDDEN", "PHOTO_VIDEO", `Title: ${item.title}`, activeBranch);
+      
+      setMedia(prev => prev.map(m => m.id === item.id ? { ...m, hidden: newHiddenState } : m));
+    } catch (error) {
+      console.error("Toggle hide error:", error);
+      toast.error("Failed to update hide status.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -353,7 +373,7 @@ export default function GalleryManager() {
             const isSelected = selectedItems.includes(item.id);
 
             return (
-              <Card key={item.id} className={`overflow-hidden relative transition-all ${isSelected ? 'ring-2 ring-red-500 shadow-lg' : ''}`}>
+              <Card key={item.id} className={`overflow-hidden relative transition-all ${isSelected ? 'ring-2 ring-red-500 shadow-lg' : ''} ${item.hidden ? 'opacity-60 bg-gray-50 border-dashed' : ''}`}>
                 {canDelete && (
                   <div className="absolute top-2 left-2 z-10 bg-white/90 rounded-sm">
                     <input 
@@ -375,9 +395,20 @@ export default function GalleryManager() {
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-gray-500 uppercase">{item.type}</span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{item.category || "General"}</span>
+                    {item.hidden && (
+                      <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">Hidden</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => toggleHide(item)} 
+                    title={item.hidden ? "Unhide Image" : "Hide Image"}
+                  >
+                    {item.hidden ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4" />}
+                  </Button>
                   <Button variant="outline" size="icon" onClick={() => copyToClipboard(item.url, item.id)} title="Copy URL">
                     {copiedId === item.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </Button>

@@ -15,6 +15,7 @@ interface MediaItem {
   url: string;
   type: "image" | "video";
   createdAt: any;
+  hidden?: boolean;
 }
 
 export default function Gallery() {
@@ -73,7 +74,7 @@ export default function Gallery() {
       const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: "video" as const })) as MediaItem[];
       
       const combined = [...galleryData, ...videosData]
-        .filter(item => item.category !== "Accommodation")
+        .filter(item => item.category !== "Accommodation" && !item.hidden)
         .sort((a: any, b: any) => 
           (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
         );

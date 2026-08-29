@@ -5,6 +5,7 @@ import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/fires
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { validatePhoneNumber } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -51,6 +52,15 @@ export default function FormPage() {
     if (form.closesAt && new Date(form.closesAt) < new Date()) {
       toast.error("This form is no longer accepting responses.");
       return;
+    }
+
+    // Validate phone fields if present
+    for (const field of form.fields) {
+      const val = answers[field.id];
+      if (field.type === "tel" && val && !validatePhoneNumber(val.toString())) {
+        toast.error(`Please enter a valid phone number for ${field.label}.`);
+        return;
+      }
     }
 
     setSubmitting(true);

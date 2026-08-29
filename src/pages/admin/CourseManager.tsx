@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { logAudit } from "@/lib/audit";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlaySquare, Trash2, Link as LinkIcon, Calendar, UploadCloud } from "lucide-react";
+import { PlaySquare, Trash2, Link as LinkIcon, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CourseManager() {
@@ -88,37 +88,6 @@ export default function CourseManager() {
     }
   };
 
-  const handleMigrateOldData = async () => {
-    if (!confirm("Are you sure you want to import the legacy Excel/CSV data? This will add 5 old courses to the database.")) return;
-    setAdding(true);
-    const legacyData = [
-      { Title: "Introduction to Bhagavad Gita", Link: "https://www.youtube.com/watch?v=1a2b3c4d" },
-      { Title: "Krishna Consciousness Basics", Link: "https://www.youtube.com/watch?v=2b3c4d5e" },
-      { Title: "Chanting and Bhakti", Link: "https://www.youtube.com/watch?v=3c4d5e6f" },
-      { Title: "Hare Krishna Movement History", Link: "https://www.youtube.com/watch?v=4d5e6f7g" },
-      { Title: "Philosophy and Practice", Link: "https://www.youtube.com/watch?v=5e6f7g8h" }
-    ];
-
-    try {
-      for (const course of legacyData) {
-        await addDoc(collection(db, "courses"), {
-          Title: course.Title,
-          Link: course.Link,
-          createdBy: auth.currentUser?.uid,
-          createdAt: serverTimestamp(),
-          branchId: activeBranch,
-        });
-      }
-      toast.success("Legacy data migrated successfully!");
-      fetchCourses();
-    } catch (error) {
-      console.error("Migration error:", error);
-      toast.error("Failed to migrate data");
-    } finally {
-      setAdding(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -126,10 +95,7 @@ export default function CourseManager() {
           <h1 className="text-3xl font-bold tracking-tight">Course Manager</h1>
           <p className="text-gray-500 mt-1">Add or remove YouTube videos for the public Courses page.</p>
         </div>
-        <Button variant="outline" onClick={handleMigrateOldData} disabled={adding}>
-          <UploadCloud className="w-4 h-4 mr-2" />
-          Import Old Excel Data
-        </Button>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

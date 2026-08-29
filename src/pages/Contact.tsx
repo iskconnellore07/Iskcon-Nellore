@@ -4,13 +4,14 @@ import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/config";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useBranchPrefix, useBranchName } from "@/hooks/useBranchPrefix";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { validatePhoneNumber } from "@/lib/utils";
 
 const Contact = () => {
   const [name, setName] = useState("");
@@ -45,28 +46,44 @@ const Contact = () => {
       setStatus("Please fill in all required fields.");
       return;
     }
+
+    if (phone.trim() && !validatePhoneNumber(phone)) {
+      setStatus("Please enter a valid phone number.");
+      return;
+    }
     
     setIsSubmitting(true);
     setStatus("Sending message...");
     
     try {
-      const response = await fetch(`${API_BASE_URL}/submit-contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, message }),
+      // Save message to contact_messages collection in Firestore
+      await addDoc(collection(db, "contact_messages"), {
+        name,
+        email,
+        phone: phone || "",
+        message,
+        branchId: branchSlug,
+        createdAt: serverTimestamp(),
       });
-      
-      if (response.ok) {
-        setStatus("Message sent successfully!");
-        setName("");
-        setEmail("");
-        setPhone("");
-        setMessage("");
-      } else {
-        setStatus("Failed to send message. Please try again later.");
+
+      try {
+        await fetch(`${API_BASE_URL}/submit-contact`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, phone, message }),
+        });
+      } catch (fetchErr) {
+        console.warn("API submission skipped or failed, saved to DB only:", fetchErr);
       }
+      
+      setStatus("Message sent successfully!");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
     } catch (error) {
-      setStatus("Network error. Please make sure the server is running.");
+      console.error("Error saving contact message:", error);
+      setStatus("Failed to send message. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
 import { Button } from "@/components/ui/button";
@@ -24,16 +24,27 @@ export default function ReceiptDownload() {
       }
 
       try {
-        const q = query(collection(db, "transactions"), where("orderId", "==", orderId));
-        const querySnapshot = await getDocs(q);
+        // Try direct fetch by document ID (new secure behavior)
+        const docRef = doc(db, "transactions", orderId);
+        const docSnap = await getDoc(docRef);
         
-        if (querySnapshot.empty) {
+        let data = null;
+        if (docSnap.exists()) {
+          data = docSnap.data();
+        } else {
+          // Fallback: query by orderId field (legacy support/logged-in admin)
+          const q = query(collection(db, "transactions"), where("orderId", "==", orderId));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            data = querySnapshot.docs[0].data();
+          }
+        }
+        
+        if (!data) {
           setError("Transaction not found. Please verify the link.");
           setLoading(false);
           return;
         }
-
-        const data = querySnapshot.docs[0].data();
 
         let branchSettings: any = null;
         if (data.location) {

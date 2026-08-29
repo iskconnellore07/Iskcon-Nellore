@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { validatePhoneNumber } from "@/lib/utils";
 import { Trash2, Edit, Save, X, Plus, ExternalLink, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
@@ -69,6 +70,11 @@ export default function BranchManager() {
   const handleSaveBranch = async () => {
     if (!editingBranch.id || !editingBranch.name) {
       toast.error("Branch URL Name and Name are required.");
+      return;
+    }
+
+    if (editingBranch.phone && !validatePhoneNumber(editingBranch.phone)) {
+      toast.error("Please enter a valid contact phone number (10-digit mobile number, optionally starting with +91/91/0, or international format).");
       return;
     }
     

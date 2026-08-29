@@ -157,7 +157,7 @@ export default function DevoteeAdmin() {
 
   async function handleImport(file: File) {
     try {
-      const imported = await importDevoteesFromCsv(file);
+      const imported = await importDevoteesFromCsv(file, activeBranch);
       toast({
         title: "Success",
         description: `Imported ${imported.length} devotees`,

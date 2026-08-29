@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield, UserPlus, Save, Trash2, Edit, LayoutDashboard, Users, PlaySquare, Image, Calendar, FileText, X, AlertCircle, Home, UserCog, User, Clock, BookHeart } from "lucide-react";
+import { Shield, UserPlus, Save, Trash2, Edit, LayoutDashboard, Users, PlaySquare, Image, Calendar, FileText, X, AlertCircle, Home, UserCog, User, Clock, BookHeart, Heart, MessageSquare } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, getDocs, collection, query, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
@@ -39,6 +39,8 @@ const MODULES = [
   { id: "accommodation", name: "Accommodation Manager", icon: Home },
   { id: "forms", name: "Event Forms Builder", icon: FileText },
   { id: "banners", name: "Website Banners", icon: Image },
+  { id: "volunteer_registration", name: "Volunteer Registration", icon: Heart },
+  { id: "feedback", name: "Feedback Section", icon: MessageSquare },
 ];
 
 export default function ManageLogins() {

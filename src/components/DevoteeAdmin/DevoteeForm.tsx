@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Devotee } from "@/types/devotee-types";
+import { validatePhoneNumber } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface DevoteeFormProps {
   devotee?: Devotee;
@@ -46,6 +48,10 @@ export default function DevoteeForm({ devotee, onSave, onCancel }: DevoteeFormPr
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validatePhoneNumber(formData.phone)) {
+      toast.error("Please enter a valid phone number (10-digit mobile number, optionally starting with +91/91/0, or international format).");
+      return;
+    }
     setLoading(true);
 
     try {

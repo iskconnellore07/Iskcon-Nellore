@@ -1,6 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAiRwVZi3NWMALFOGuW9VFunYfRWY0qQIo",
@@ -89,9 +89,9 @@ export const handler: Handler = async (event) => {
       paymentMethod: paymentMethod || 'Cash'
     };
 
-    // Save to Firestore
-    const docRef = await addDoc(collection(firestoreDb, "transactions"), transactionData);
-    console.log("Offline Transaction written to Firebase with ID: ", docRef.id);
+    // Save to Firestore using orderId as document ID
+    await setDoc(doc(firestoreDb, "transactions", orderId), transactionData);
+    console.log("Offline Transaction written to Firebase with ID: ", orderId);
 
     // Sync to Google Sheets if environment config is present
     if (process.env.GOOGLE_APPS_SCRIPT_URL) {

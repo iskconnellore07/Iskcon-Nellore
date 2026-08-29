@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import type { Handler } from '@netlify/functions';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAiRwVZi3NWMALFOGuW9VFunYfRWY0qQIo",
@@ -131,8 +131,8 @@ export const handler: Handler = async (event) => {
         timestamp: new Date().toISOString()
       };
       
-      const docRef = await addDoc(collection(firestoreDb, "transactions"), transactionData);
-      console.log("Transaction written to Firebase with ID: ", docRef.id);
+      await setDoc(doc(firestoreDb, "transactions", orderId), transactionData);
+      console.log("Transaction written to Firebase with ID: ", orderId);
     } catch (error) {
       console.error("Firebase write error:", error);
     }

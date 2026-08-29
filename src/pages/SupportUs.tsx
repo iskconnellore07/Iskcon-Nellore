@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Header from "@/components/Header";
 import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { validatePhoneNumber } from "@/lib/utils";
 import {
   Select,
   SelectTrigger,
@@ -15,14 +16,55 @@ import {
 } from "@/components/ui/select";
 import { Heart, HandHeart, Users } from "lucide-react";
 import heroImage from "@/assets/hero-temple.jpg";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 
 const SupportUs = () => {
+  const branchPrefix = useBranchPrefix();
+  const branchSlug = branchPrefix.replace('/', '') || 'nellore';
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [seva, setSeva] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const data = Object.fromEntries(fd as any);
-    console.log("Volunteer registration:", data);
-    alert("Thank you for registering — we will contact you soon.");
+
+    if (!phone || !validatePhoneNumber(phone)) {
+      alert("Please enter a valid phone number (10-digit mobile number, optionally starting with +91/91/0, or international format).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "volunteer_registrations"), {
+        name,
+        email,
+        phone,
+        seva: seva || "flexible", // fallback to flexible if not selected
+        availability: availability || "flexible",
+        branchId: branchSlug,
+        createdAt: serverTimestamp(),
+      });
+
+      alert("Thank you for registering — we will contact you soon.");
+      
+      // Reset form state
+      setName("");
+      setEmail("");
+      setPhone("");
+      setSeva("");
+      setAvailability("");
+    } catch (error) {
+      console.error("Error saving volunteer registration:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,25 +107,25 @@ const SupportUs = () => {
                   <form onSubmit={handleSubmit} className="grid gap-5">
                     <div>
                       <Label htmlFor="vol-name">Name of volunteer</Label>
-                      <Input id="vol-name" name="name" required placeholder="Full name" />
+                      <Input id="vol-name" name="name" required placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <Label htmlFor="vol-email">Email Id</Label>
-                        <Input id="vol-email" name="email" type="email" required placeholder="you@example.com" />
+                        <Input id="vol-email" name="email" type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                       </div>
 
                       <div>
                         <Label htmlFor="vol-phone">Phone Number</Label>
-                        <Input id="vol-phone" name="phone" type="tel" required placeholder="+91-XXXXXXXXXX" />
+                        <Input id="vol-phone" name="phone" type="tel" required placeholder="+91-XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <Label htmlFor="seva-category">Seva category</Label>
-                        <Select>
+                        <Select value={seva} onValueChange={setSeva}>
                           <SelectTrigger id="seva-category" name="seva">
                             <SelectValue placeholder="Select seva category" />
                           </SelectTrigger>
@@ -99,7 +141,7 @@ const SupportUs = () => {
 
                       <div>
                         <Label htmlFor="availability">Availability</Label>
-                        <Select>
+                        <Select value={availability} onValueChange={setAvailability}>
                           <SelectTrigger id="availability" name="availability">
                             <SelectValue placeholder="Select availability" />
                           </SelectTrigger>
@@ -113,8 +155,8 @@ const SupportUs = () => {
                     </div>
 
                     <div className="pt-2">
-                      <Button type="submit" variant="hero" className="w-full md:w-auto">
-                        Register for Seva
+                      <Button type="submit" variant="hero" className="w-full md:w-auto" disabled={isSubmitting}>
+                        {isSubmitting ? "Registering..." : "Register for Seva"}
                       </Button>
                     </div>
                   </form>

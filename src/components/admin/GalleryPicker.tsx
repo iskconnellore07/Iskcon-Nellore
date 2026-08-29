@@ -70,7 +70,11 @@ export function GalleryPicker({ onSelect, maxSelection = 5, filterType = "all" }
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
-      if (open && media.length === 0) fetchMedia();
+      if (open) {
+        setSelected([]);
+        setIs360Map({});
+        if (media.length === 0) fetchMedia();
+      }
     }}>
       <DialogTrigger asChild>
         <Button variant="outline">Choose from Gallery</Button>

@@ -26,6 +26,7 @@ import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-gene
 import { API_BASE_URL } from "@/config";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { validatePhoneNumber } from "@/lib/utils";
 
 const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -98,6 +99,10 @@ const Header = () => {
     }
     if (!formData.mobile?.trim()) {
       alert("Please enter your mobile number.");
+      return;
+    }
+    if (!validatePhoneNumber(formData.mobile)) {
+      alert("Please enter a valid 10-digit mobile number (optionally with +91/91/0 prefix) or international format starting with +.");
       return;
     }
     if (!amount || Number(amount) <= 0) {

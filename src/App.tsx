@@ -37,6 +37,8 @@ import AuditLogs from "./pages/admin/AuditLogs";
 import Accommodation from "./pages/Accommodation";
 import AccommodationManager from "./pages/admin/AccommodationManager";
 import BranchManager from "./pages/admin/BranchManager";
+import VolunteerRegistration from "./pages/admin/VolunteerRegistration";
+import Feedback from "./pages/admin/Feedback";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -89,7 +91,7 @@ const App = () => (
           <Route path="/:branch/goshala" element={<Goshala />} />
           <Route path="/:branch/accommodation" element={<Accommodation />} />
           
-          <Route path="/form/:slug" element={<FormPage />} />
+          <Route path="/forms/:formId" element={<FormPage />} />
 
           {/* Protected Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -113,6 +115,8 @@ const App = () => (
             <Route path="forms" element={<FormManager />} />
             <Route path="forms/:formId/responses" element={<FormResponses />} />
             <Route path="accommodation" element={<AccommodationManager />} />
+            <Route path="volunteers" element={<VolunteerRegistration />} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="branches" element={<BranchManager />} />
           </Route>

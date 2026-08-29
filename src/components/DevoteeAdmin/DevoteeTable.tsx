@@ -13,6 +13,21 @@ interface DevoteeTableProps {
   onDelete: (id: string) => void;
 }
 
+const formatDisplayDate = (dateStr?: string) => {
+  if (!dateStr) return "-";
+  
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length === 4) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+  
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  
+  return date.toLocaleDateString("en-IN");
+};
+
 export default function DevoteeTable({ devotees, onSelect, onEdit, onDelete }: DevoteeTableProps) {
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -73,14 +88,14 @@ export default function DevoteeTable({ devotees, onSelect, onEdit, onDelete }: D
                   <TableCell>
                     {devotee.donation_amount ? (
                       <div className={getDonationTypeColor(devotee.donation_type)}>
-                        ₹{devotee.donation_amount.toLocaleString()} ({devotee.donation_type})
+                        ₹{devotee.donation_amount.toLocaleString()}{devotee.donation_type ? ` (${devotee.donation_type})` : ""}
                       </div>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    {devotee.birthday ? new Date(devotee.birthday).toLocaleDateString("en-IN") : "-"}
+                    {formatDisplayDate(devotee.birthday)}
                   </TableCell>
                   <TableCell>{getStatusBadge(devotee.status)}</TableCell>
                   <TableCell>

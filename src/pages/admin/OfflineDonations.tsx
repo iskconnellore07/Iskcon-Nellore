@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, onSnapshot, getDocs, where, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, getDocs, where, addDoc, doc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { validatePhoneNumber } from "@/lib/utils";
 import { Loader2, Plus, Download, Search, Check, AlertCircle, RefreshCw, FileText, CheckCircle2, Copy, X } from "lucide-react";
 import { API_BASE_URL } from "@/config";
 import { generateBeautifulReceipt, generate80GReceipt } from "@/lib/receipt-generator";
@@ -188,6 +189,11 @@ export default function OfflineDonations() {
       return;
     }
 
+    if (!validatePhoneNumber(formData.phone)) {
+      toast.error("Please enter a valid mobile number (10-digit mobile number, optionally starting with +91/91/0, or international format).");
+      return;
+    }
+
     if (formData.claim80G) {
       const panVal = formData.pan?.trim() || "";
       if (!panVal) {
@@ -259,10 +265,10 @@ export default function OfflineDonations() {
           paymentMethod: formData.paymentMethod || 'Cash'
         };
 
-        const docRef = await addDoc(collection(db, "transactions"), transactionData);
+        await setDoc(doc(db, "transactions", orderId), transactionData);
         result = {
           success: true,
-          transactionId: docRef.id,
+          transactionId: orderId,
           orderId: orderId
         };
       }

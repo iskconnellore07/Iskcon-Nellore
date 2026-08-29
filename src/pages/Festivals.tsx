@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 import Header from "@/components/Header";
@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { validatePhoneNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -95,18 +96,26 @@ const FESTIVAL_DATES: Record<string, string> = {
 };
 
 export default function Festivals() {
+  const routerLocation = useLocation();
+  const searchParams = new URLSearchParams(routerLocation.search);
+  const initialFestival = searchParams.get("festival") || FESTIVALS[0];
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [festival, setFestival] = useState(FESTIVALS[0]);
+  const [festival, setFestival] = useState(initialFestival);
   const [date, setDate] = useState<Date | undefined>(() => {
+    const searchParams = new URLSearchParams(routerLocation.search);
+    const initialFest = searchParams.get("festival");
+    if (initialFest && FESTIVAL_DATES[initialFest]) {
+      return new Date(initialFest && FESTIVAL_DATES[initialFest] ? FESTIVAL_DATES[initialFest] + 'T00:00:00' : "");
+    }
     const today = new Date();
     today.setDate(today.getDate() + 1);
     return today;
   });
   const [slot, setSlot] = useState("06:00 - 07:00");
   const [people, setPeople] = useState<number>(1);
-  const routerLocation = useLocation();
 
   // Default branch based on URL
   const getDefaultBranch = () => {
@@ -124,6 +133,7 @@ export default function Festivals() {
   const [location, setLocation] = useState(getDefaultBranch());
   const [message, setMessage] = useState<string | null>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
+  const [dbFestivals, setDbFestivals] = useState<{title: string, date: string}[]>([]);
 
   useEffect(() => {
     const fetchBranchInfo = async () => {
@@ -142,6 +152,54 @@ export default function Festivals() {
     fetchBranchInfo();
   }, [branchSlug]);
 
+  useEffect(() => {
+    const fetchDbFestivals = async () => {
+      try {
+        const snapshot = await getDocs(query(collection(db, "festivals"), orderBy("date", "asc")));
+        const data = snapshot.docs.map(doc => ({
+          title: doc.data().title || "",
+          date: doc.data().date || "",
+          branchId: doc.data().branchId
+        }));
+        const filtered = data.filter((item: any) => 
+          item.branchId === branchSlug || (!item.branchId && branchSlug === 'nellore')
+        );
+        setDbFestivals(filtered);
+      } catch (error) {
+        console.error("Error fetching db festivals:", error);
+      }
+    };
+    fetchDbFestivals();
+  }, [branchSlug]);
+
+  const allFestivals = Array.from(new Set([
+    ...FESTIVALS,
+    ...(initialFestival ? [initialFestival] : []),
+    ...dbFestivals.map(f => f.title)
+  ]));
+
+  const getFestivalDate = (festivalName: string) => {
+    const dbFest = dbFestivals.find(f => f.title === festivalName);
+    if (dbFest && dbFest.date) {
+      return new Date(dbFest.date + 'T00:00:00');
+    }
+    if (FESTIVAL_DATES[festivalName]) {
+      return new Date(FESTIVAL_DATES[festivalName] + 'T00:00:00');
+    }
+    return undefined;
+  };
+
+  useEffect(() => {
+    const preselected = searchParams.get("festival");
+    if (preselected) {
+      setFestival(preselected);
+      const festDate = getFestivalDate(preselected);
+      if (festDate) {
+        setDate(festDate);
+      }
+    }
+  }, [routerLocation.search, dbFestivals]);
+
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [previewBooking, setPreviewBooking] = useState<Partial<Booking> | null>(null);
 
@@ -154,6 +212,7 @@ export default function Festivals() {
   function validate(): string | null {
     if (!name.trim()) return "Please enter your name.";
     if (!phone.trim()) return "Please enter your phone number.";
+    if (!validatePhoneNumber(phone)) return "Please enter a valid phone number (10-digit mobile number, optionally starting with +91/91/0, or international format).";
     if (!date) return "Please choose a date.";
     if (claim80G) {
       const panVal = pan.trim();
@@ -443,12 +502,13 @@ export default function Festivals() {
                       onChange={(e) => {
                         const newFestival = e.target.value;
                         setFestival(newFestival);
-                        if (FESTIVAL_DATES[newFestival]) {
-                          setDate(new Date(FESTIVAL_DATES[newFestival]));
+                        const festDate = getFestivalDate(newFestival);
+                        if (festDate) {
+                          setDate(festDate);
                         }
                       }}
                     >
-                      {FESTIVALS.map((f) => (
+                      {allFestivals.map((f) => (
                         <option key={f} value={f}>{f}</option>
                       ))}
                     </select>

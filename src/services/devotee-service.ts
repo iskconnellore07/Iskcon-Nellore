@@ -167,7 +167,39 @@ export function exportDevokeesToCsv(devotees: Devotee[]) {
   window.URL.revokeObjectURL(url);
 }
 
-export async function importDevoteesFromCsv(file: File) {
+function normalizeDate(dateStr?: string): string | undefined {
+  if (!dateStr) return undefined;
+  const cleaned = dateStr.trim();
+  if (!cleaned) return undefined;
+
+  // 1. Check for DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = cleaned.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const day = dmyMatch[1].padStart(2, '0');
+    const month = dmyMatch[2].padStart(2, '0');
+    const year = dmyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // 2. Check for YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = cleaned.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = ymdMatch[1];
+    const month = ymdMatch[2].padStart(2, '0');
+    const day = ymdMatch[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 3. Fallback to standard JS Date parsing if it yields a valid date
+  const parsed = new Date(cleaned);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+
+  return cleaned; // Fallback to raw string if we can't parse it
+}
+
+export async function importDevoteesFromCsv(file: File, activeBranch?: string) {
   return new Promise<Devotee[]>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -175,26 +207,51 @@ export async function importDevoteesFromCsv(file: File) {
         const text = e.target?.result as string;
         const lines = text.split("\n");
         if (lines.length < 2) return resolve([]);
-        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
         
-        const existingDevotees = await fetchDevotees();
+        const existingDevotees = await fetchDevotees(undefined, activeBranch);
         
         const devoteesToInsert = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
-          const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
-          const devotee: any = { created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+          const values = lines[i].split(",").map(v => v.trim());
+          const devotee: any = { 
+            status: "active",
+            branchId: activeBranch || "nellore",
+            created_at: new Date().toISOString(), 
+            updated_at: new Date().toISOString() 
+          };
           
           headers.forEach((header, index) => {
-            if (header === "name") devotee.name = values[index];
-            if (header === "phone") devotee.phone = values[index];
-            if (header === "email") devotee.email = values[index] || undefined;
-            if (header === "birthday") devotee.birthday = values[index] || undefined;
-            if (header === "anniversary") devotee.anniversary = values[index] || undefined;
-            if (header === "donation day") devotee.donation_day_of_month = parseInt(values[index]) || undefined;
-            if (header === "donation amount") devotee.donation_amount = parseFloat(values[index]) || undefined;
-            if (header === "status") devotee.status = values[index] || "active";
+            const rawVal = values[index];
+            const cleanVal = rawVal ? rawVal.replace(/^"|"$/g, "").trim() : "";
+            
+            if (header === "name") devotee.name = cleanVal;
+            if (header === "phone") devotee.phone = cleanVal;
+            if (header === "email") devotee.email = cleanVal || undefined;
+            if (header === "birthday") devotee.birthday = normalizeDate(cleanVal);
+            if (header === "anniversary") devotee.anniversary = normalizeDate(cleanVal);
+            if (header === "donation day") devotee.donation_day_of_month = parseInt(cleanVal) || undefined;
+            if (header === "donation amount") devotee.donation_amount = parseFloat(cleanVal) || undefined;
+            if (header === "donation type") {
+              const typeVal = cleanVal.toLowerCase();
+              if (typeVal === "monthly" || typeVal === "yearly" || typeVal === "one-time") {
+                devotee.donation_type = typeVal;
+              }
+            }
+            if (header === "status") {
+              const statusVal = cleanVal.toLowerCase();
+              if (statusVal === "active" || statusVal === "inactive" || statusVal === "paused") {
+                devotee.status = statusVal;
+              } else if (cleanVal) {
+                devotee.status = "active";
+              }
+            }
           });
+          
+          if (devotee.donation_amount && !devotee.donation_type) {
+            devotee.donation_type = devotee.donation_day_of_month ? "monthly" : "yearly";
+          }
           
           if (devotee.name && devotee.phone) {
             const isDuplicate = existingDevotees.some(

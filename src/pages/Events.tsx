@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, isSameDay } from "date-fns";
 import { Link } from "react-router-dom";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import Header from "@/components/Header";
 import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
@@ -85,10 +87,45 @@ export default function Events() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date("2026-09-04")); // Default to Janmashtami month
   const [month, setMonth] = useState<Date>(new Date("2026-09-01"));
   const branchPrefix = useBranchPrefix();
+  const branchSlug = branchPrefix.replace('/', '') || 'nellore';
+  const [dbFestivals, setDbFestivals] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDbFestivals = async () => {
+      try {
+        const snapshot = await getDocs(query(collection(db, "festivals"), orderBy("date", "asc")));
+        const data = snapshot.docs.map(doc => {
+          const docData = doc.data();
+          return {
+            id: doc.id,
+            title: docData.title || "",
+            // Use T00:00:00 to parse in local timezone
+            date: docData.date ? new Date(docData.date + 'T00:00:00') : new Date(),
+            description: docData.description || "",
+            time: docData.time || "All Day Event",
+            branchId: docData.branchId
+          };
+        });
+        const filtered = data.filter((item: any) => 
+          item.branchId === branchSlug || (!item.branchId && branchSlug === 'nellore')
+        );
+        setDbFestivals(filtered);
+      } catch (error) {
+        console.error("Error fetching db festivals:", error);
+      }
+    };
+    fetchDbFestivals();
+  }, [branchSlug]);
+
+  // Combine db festivals with hardcoded ones, prioritizing db festivals on date conflicts
+  const allFestivals = [
+    ...dbFestivals,
+    ...FESTIVALS_2026
+  ];
 
   // Check if a date has a festival
   const getFestivalForDate = (day: Date) => {
-    return FESTIVALS_2026.find(f => isSameDay(f.date, day));
+    return allFestivals.find(f => isSameDay(f.date, day));
   };
 
   const selectedFestival = getFestivalForDate(selectedDate);
@@ -128,7 +165,7 @@ export default function Events() {
                       month={month}
                       onMonthChange={setMonth}
                       modifiers={{
-                        festival: FESTIVALS_2026.map(f => f.date),
+                        festival: allFestivals.map(f => f.date),
                       }}
                       modifiersStyles={{
                         festival: {
@@ -170,7 +207,7 @@ export default function Events() {
                       </div>
                       <div className="pt-4">
                         <Button asChild size="lg" className="w-full sm:w-auto font-semibold">
-                          <Link to={`${branchPrefix}/festivals`}>Book Festival Seva / Slot</Link>
+                          <Link to={`${branchPrefix}/festivals?festival=${encodeURIComponent(selectedFestival.title)}`}>Book Festival Seva / Slot</Link>
                         </Button>
                       </div>
                     </CardContent>

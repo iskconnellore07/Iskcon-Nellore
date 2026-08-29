@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { validatePhoneNumber } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, isWithinInterval, parseISO, differenceInDays, addDays } from "date-fns";
@@ -17,8 +18,20 @@ import { Calendar as CalendarIcon, Users, Search, MapPin, Wifi, Coffee, Eye, Sta
 import { toast } from "sonner";
 import { Pannellum } from "pannellum-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { API_BASE_URL } from "@/config";
 
-const RAZORPAY_KEY = "rzp_test_YourTestKeyHere"; // Placeholder
+function getWebGLMaxTextureSize(): number {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (gl) {
+      return gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
+    }
+  } catch (e) {
+    console.error("Error getting WebGL max texture size", e);
+  }
+  return 4096; // safe fallback
+}
 
 export default function Accommodation() {
   const branchName = useBranchName();
@@ -43,6 +56,16 @@ export default function Accommodation() {
   // 360 Viewer State
   const [is360Open, setIs360Open] = useState(false);
   const [viewerUrl, setViewerUrl] = useState("");
+  const [isViewerLoading, setIsViewerLoading] = useState(false);
+
+  useEffect(() => {
+    if (!is360Open) {
+      if (viewerUrl && viewerUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(viewerUrl);
+      }
+      setViewerUrl("");
+    }
+  }, [is360Open]);
 
   useEffect(() => {
     fetchRooms();
@@ -108,6 +131,7 @@ export default function Accommodation() {
   const submitPaymentAndBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) return toast.error("Name and Phone are required.");
+    if (!validatePhoneNumber(phone)) return toast.error("Please enter a valid phone number (10-digit mobile number, optionally starting with +91/91/0, or international format).");
     if (checkOut! <= checkIn!) return toast.error("Invalid Check-out Date.");
     
     setIsSubmitting(true);
@@ -121,13 +145,40 @@ export default function Accommodation() {
     const nights = Math.max(1, differenceInDays(checkOut!, checkIn!));
     const totalAmount = selectedRoom.price * nights;
 
+    let orderData;
+    try {
+      const orderResponse = await fetch(`${API_BASE_URL}/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: totalAmount,
+          name,
+          phone,
+          email,
+          templeLocation: `ISKCON ${branchName}`
+        }),
+      });
+      orderData = await orderResponse.json();
+      if (orderData.error) {
+        toast.error(orderData.error);
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to initiate payment. Please try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const options = {
-      key: RAZORPAY_KEY,
-      amount: totalAmount * 100, // Amount in paise
+      key: orderData.keyId,
+      amount: orderData.amount, // Amount in paise from server
       currency: "INR",
       name: `ISKCON ${branchName}`,
       description: `Booking for ${selectedRoom.roomNo}`,
       image: "https://iskcon.org/wp-content/uploads/2021/08/iskcon-logo.png",
+      order_id: orderData.orderId,
       handler: async function (response: any) {
         try {
           // Add booking
@@ -185,9 +236,74 @@ export default function Accommodation() {
     paymentObject.open();
   };
 
-  const open360 = (url: string) => {
-    setViewerUrl(url);
+  const open360 = async (url: string) => {
     setIs360Open(true);
+    setIsViewerLoading(true);
+    setViewerUrl(""); // Reset previous image
+
+    const maxTextureSize = getWebGLMaxTextureSize();
+
+    const loadImage = (src: string, useCors: boolean): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        if (useCors) {
+          img.crossOrigin = "anonymous";
+        }
+        img.onload = () => resolve(img);
+        img.onerror = (e) => reject(e);
+        img.src = src;
+      });
+    };
+
+    try {
+      let img: HTMLImageElement;
+      try {
+        // First try with CORS so we can resize it if needed
+        img = await loadImage(url, true);
+      } catch (corsError) {
+        console.warn("CORS load failed, retrying without CORS (resize will be disabled)", corsError);
+        // Retry without CORS
+        img = await loadImage(url, false);
+        // Since canvas will be tainted without CORS, we cannot resize. Fallback to original URL.
+        setViewerUrl(url);
+        setIsViewerLoading(false);
+        return;
+      }
+
+      if (img.width > maxTextureSize) {
+        console.log(`Image width (${img.width}px) exceeds max WebGL texture size (${maxTextureSize}px). Resizing...`);
+        
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          throw new Error("Could not get 2D context");
+        }
+
+        // Calculate aspect ratio
+        const scale = maxTextureSize / img.width;
+        canvas.width = maxTextureSize;
+        canvas.height = img.height * scale;
+
+        // Draw image resized
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+        if (blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          setViewerUrl(blobUrl);
+        } else {
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+          setViewerUrl(dataUrl);
+        }
+      } else {
+        setViewerUrl(url);
+      }
+    } catch (error) {
+      console.error("Failed to load or process 360 image:", error);
+      setViewerUrl(url);
+    } finally {
+      setIsViewerLoading(false);
+    }
   };
 
   return (
@@ -378,9 +494,14 @@ export default function Accommodation() {
       {/* 360 Viewer Dialog */}
       <Dialog open={is360Open} onOpenChange={setIs360Open}>
         <DialogContent className="max-w-5xl p-1 bg-black border-none">
-          <div className="relative w-full aspect-video md:aspect-[2/1] rounded-md overflow-hidden">
+          <div className="relative w-full aspect-video md:aspect-[2/1] rounded-md overflow-hidden min-h-[300px]">
              <Button variant="ghost" className="absolute top-2 right-2 z-50 text-white bg-black/50 hover:bg-black/70" onClick={() => setIs360Open(false)}>Close</Button>
-             {is360Open && (
+             {isViewerLoading && (
+               <div className="absolute inset-0 flex items-center justify-center bg-black text-white text-lg">
+                 Loading 360° view...
+               </div>
+             )}
+             {is360Open && viewerUrl && (
                <Pannellum width="100%" height="100%" image={viewerUrl} pitch={10} yaw={180} hfov={90} autoLoad />
              )}
           </div>
