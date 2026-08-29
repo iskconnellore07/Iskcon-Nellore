@@ -148,5 +148,11 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if false;
     }
+
+    // WEBSITE BANNERS COLLECTION
+    match /website_banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
