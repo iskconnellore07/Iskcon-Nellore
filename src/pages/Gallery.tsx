@@ -8,6 +8,7 @@ import { Image as ImageIcon, Video, Heart, X, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import logo from "@/assets/iskcon_logo.avif";
+import { useParams } from "react-router-dom";
 
 interface MediaItem {
   id: string;
@@ -19,6 +20,10 @@ interface MediaItem {
 }
 
 export default function Gallery() {
+  const { branch } = useParams();
+  // Normalize branch: 'gudur', 'naidupet', 'nellore', etc.
+  const activeBranch = branch ? branch.toLowerCase() : "nellore";
+
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +32,7 @@ export default function Gallery() {
 
   useEffect(() => {
     fetchMedia();
-  }, []);
+  }, [activeBranch]);
 
   const openMedia = (index: number) => {
     setInitialIndex(index);
@@ -74,7 +79,11 @@ export default function Gallery() {
       const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: "video" as const })) as MediaItem[];
       
       const combined = [...galleryData, ...videosData]
-        .filter(item => item.category !== "Accommodation" && !item.hidden)
+        .filter((item: any) => {
+          // Filter by branch: show items belonging to this branch, or legacy items (no branchId) for nellore
+          const branchMatch = item.branchId === activeBranch || (!item.branchId && activeBranch === "nellore");
+          return branchMatch && item.category !== "Accommodation" && !item.hidden;
+        })
         .sort((a: any, b: any) => 
           (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
         );

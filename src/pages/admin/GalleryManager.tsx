@@ -72,20 +72,7 @@ export default function GalleryManager() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      
-      const validFiles = selectedFiles.filter(file => {
-        if (mediaType === "image" && file.size > 9 * 1024 * 1024) {
-          toast.error(`Image ${file.name} must be smaller than 9MB`);
-          return false;
-        }
-        if (mediaType === "video" && file.size > 100 * 1024 * 1024) {
-          toast.error(`Video ${file.name} must be smaller than 100MB`);
-          return false;
-        }
-        return true;
-      });
-      
-      setFiles(validFiles);
+      setFiles(selectedFiles);
     }
   };
 
@@ -305,8 +292,8 @@ export default function GalleryManager() {
         <CardContent>
           <Tabs defaultValue="image" onValueChange={(val) => setMediaType(val as "image" | "video")}>
             <TabsList className="mb-4">
-              <TabsTrigger value="image"><ImageIcon className="w-4 h-4 mr-2" /> Photo (Max 9MB)</TabsTrigger>
-              <TabsTrigger value="video"><Video className="w-4 h-4 mr-2" /> Short Video (Max 100MB)</TabsTrigger>
+              <TabsTrigger value="image"><ImageIcon className="w-4 h-4 mr-2" /> Photo</TabsTrigger>
+              <TabsTrigger value="video"><Video className="w-4 h-4 mr-2" /> Video</TabsTrigger>
             </TabsList>
             
             <form onSubmit={handleUpload} className="space-y-4">
@@ -369,7 +356,7 @@ export default function GalleryManager() {
           <p className="text-gray-500 col-span-3">No media files uploaded yet.</p>
         ) : (
           media.map((item) => {
-            const canDelete = role === "super_admin" || role === "superadmin" || item.uploadedBy === user?.uid;
+            const canDelete = role === "super_admin" || role === "superadmin" || role === "admin" || item.uploadedBy === user?.uid;
             const isSelected = selectedItems.includes(item.id);
 
             return (

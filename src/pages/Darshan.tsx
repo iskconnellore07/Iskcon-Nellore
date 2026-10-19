@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Video } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { DynamicBanner } from "@/components/DynamicBanner";
-import darshanImage from "@/assets/darshan-altar.jpg";
-import eventKirtan from "@/assets/event-kirtan.jpg";
-import heroTemple from "@/assets/hero-temple.jpg";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import darshanImage from "@/assets/darshan-altar.jpeg";
+import eventKirtan from "@/assets/event-kirtan.jpeg";
+import heroTemple from "@/assets/hero-temple.jpeg";
 
 const Darshan = () => {
   const schedule = [
@@ -18,7 +21,34 @@ const Darshan = () => {
     { time: "8:30 PM", event: "Shayan Aarti" },
   ];
 
-  const images = [darshanImage, eventKirtan, heroTemple];
+  const [darshanBanners, setDarshanBanners] = useState<{ imageUrl: string; mediaType?: string }[]>([]);
+
+  useEffect(() => {
+    const fetchDarshanBanners = async () => {
+      try {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const snapshot = await getDocs(query(collection(db, "website_banners"), where("location", "==", "darshan")));
+        const data = snapshot.docs
+          .map(doc => ({ ...doc.data() } as any))
+          .filter((b: any) => !b.endDate || new Date(b.endDate) >= now)
+          .sort((a: any, b: any) => a.order - b.order);
+        setDarshanBanners(data);
+      } catch (e) {
+        console.error("Failed to fetch darshan banners", e);
+      }
+    };
+    fetchDarshanBanners();
+  }, []);
+
+  // Use darshan banners from Firebase (Admin > Banner Manager > Daily Darshan), or fallback to local images
+  const carouselImages = darshanBanners.length > 0
+    ? darshanBanners.map(b => ({ src: b.imageUrl, type: b.mediaType || "image" }))
+    : [
+        { src: darshanImage, type: "image" },
+        { src: eventKirtan, type: "image" },
+        { src: heroTemple, type: "image" },
+      ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,18 +69,22 @@ const Darshan = () => {
             </div>
           </section>
         </DynamicBanner>
-        
+
         <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <Card className="mb-8">
-                {/* Carousel that fetches images from assets */}
+                {/* Carousel - To change these images: Admin > Website Banners > select "Daily Darshan" location */}
                 <Carousel className="relative">
                   <CarouselContent className="w-full">
-                    {images.map((src, idx) => (
+                    {carouselImages.map((item, idx) => (
                       <CarouselItem key={idx}>
                         <div className="aspect-video overflow-hidden rounded-t-lg">
-                          <img src={src} alt={`Darshan ${idx + 1}`} className="w-full h-full object-cover" />
+                          {item.type === "video" ? (
+                            <video src={item.src} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+                          ) : (
+                            <img src={item.src} alt={`Darshan ${idx + 1}`} className="w-full h-full object-cover" />
+                          )}
                         </div>
                       </CarouselItem>
                     ))}
@@ -97,7 +131,7 @@ const Darshan = () => {
                   </div>
                   <div className="mt-6 p-4 bg-muted rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      <strong>Note:</strong> Timing may vary on special occasions and festivals. 
+                      <strong>Note:</strong> Timing may vary on special occasions and festivals.
                       Please check our events calendar for updates.
                     </p>
                   </div>

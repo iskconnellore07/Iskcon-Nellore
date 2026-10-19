@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, MapPin, Clock, Users } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 
-import eventImage from "@/assets/event-kirtan.jpg";
+import eventImage from "@/assets/event-kirtan.jpeg";
 
 // Sync with Festivals.tsx
 const FESTIVALS_2026 = [

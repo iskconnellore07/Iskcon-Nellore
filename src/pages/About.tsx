@@ -4,7 +4,7 @@ import { useBranchName } from "@/hooks/useBranchPrefix";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Book, Globe } from "lucide-react";
-import heroImage from "@/assets/hero-temple.jpg";
+import heroImage from "@/assets/hero-temple.jpeg";
 
 const About = () => {
   const branchName = useBranchName();

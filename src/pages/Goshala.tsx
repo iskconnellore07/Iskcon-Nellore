@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import BackToHome from "@/components/BackToHome";
 import Footer from "@/components/Footer";
-import heroImage from "@/assets/hero-temple.jpg";
+import heroImage from "@/assets/hero-temple.jpeg";
 import { DynamicBanner } from "@/components/DynamicBanner";
 
 const Goshala = () => {

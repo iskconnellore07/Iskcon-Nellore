@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Heart, HandHeart, Users } from "lucide-react";
-import heroImage from "@/assets/hero-temple.jpg";
+import heroImage from "@/assets/hero-temple.jpeg";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useBranchPrefix } from "@/hooks/useBranchPrefix";

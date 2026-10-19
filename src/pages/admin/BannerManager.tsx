@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, Pencil, X, Save } from "lucide-react";
 import { GalleryPicker } from "@/components/admin/GalleryPicker";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -30,8 +30,8 @@ export default function BannerManager() {
 
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Form State
+
+  // Add form state
   const [imageUrl, setImageUrl] = useState("");
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -41,6 +41,18 @@ export default function BannerManager() {
   const [location, setLocation] = useState<"home" | "darshan" | "goshala">("home");
   const [endDate, setEndDate] = useState("");
   const [selectedMedia, setSelectedMedia] = useState<{url: string, type: "image"|"video"}[]>([]);
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editSubtitle, setEditSubtitle] = useState("");
+  const [editButtonText, setEditButtonText] = useState("");
+  const [editButtonLink, setEditButtonLink] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editMediaType, setEditMediaType] = useState<"image" | "video">("image");
+  const [editSelectedMedia, setEditSelectedMedia] = useState<{url: string, type: "image"|"video"}[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchBanners();
@@ -72,8 +84,8 @@ export default function BannerManager() {
       const highestOrder = banners.length > 0 ? Math.max(...banners.map(b => b.order)) : 0;
       let currentOrder = highestOrder + 1;
 
-      const itemsToAdd = selectedMedia.length > 0 
-        ? selectedMedia 
+      const itemsToAdd = selectedMedia.length > 0
+        ? selectedMedia
         : [{ url: imageUrl, type: mediaType }];
 
       for (const item of itemsToAdd) {
@@ -92,16 +104,10 @@ export default function BannerManager() {
         });
       }
 
-      toast.success(itemsToAdd.length > 1 ? `${itemsToAdd.length} Banners added successfully!` : "Banner added successfully!");
-      setImageUrl("");
-      setTitle("");
-      setSubtitle("");
-      setButtonText("");
-      setButtonLink("");
-      setMediaType("image");
-      setLocation("home");
-      setEndDate("");
-      setSelectedMedia([]);
+      toast.success(itemsToAdd.length > 1 ? `${itemsToAdd.length} Banners added!` : "Banner added!");
+      setImageUrl(""); setTitle(""); setSubtitle(""); setButtonText("");
+      setButtonLink(""); setMediaType("image"); setLocation("home");
+      setEndDate(""); setSelectedMedia([]);
       fetchBanners();
     } catch (error) {
       console.error("Error adding banner:", error);
@@ -111,11 +117,10 @@ export default function BannerManager() {
 
   const handleDelete = async (id: string, bannerLocation: string) => {
     if (!window.confirm("Are you sure you want to delete this banner?")) return;
-    
-    // Prevent deleting the last banner for a location
+
     const locationBanners = banners.filter(b => b.location === bannerLocation);
     if (locationBanners.length <= 1) {
-      toast.error(`You cannot delete this banner. There must be at least one banner for ${bannerLocation}!`);
+      toast.error(`Cannot delete — at least one banner is required for ${bannerLocation}!`);
       return;
     }
 
@@ -124,8 +129,52 @@ export default function BannerManager() {
       toast.success("Banner deleted");
       fetchBanners();
     } catch (error) {
-      console.error("Error deleting banner:", error);
       toast.error("Failed to delete banner");
+    }
+  };
+
+  const startEdit = (banner: Banner) => {
+    setEditingId(banner.id);
+    setEditImageUrl(banner.imageUrl);
+    setEditTitle(banner.title || "");
+    setEditSubtitle(banner.subtitle || "");
+    setEditButtonText(banner.buttonText || "");
+    setEditButtonLink(banner.buttonLink || "");
+    setEditEndDate(banner.endDate || "");
+    setEditMediaType(banner.mediaType || "image");
+    setEditSelectedMedia([]);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditSelectedMedia([]);
+  };
+
+  const handleSaveEdit = async (banner: Banner) => {
+    setSaving(true);
+    try {
+      const newImageUrl = editSelectedMedia.length > 0 ? editSelectedMedia[0].url : editImageUrl;
+      const newMediaType = editSelectedMedia.length > 0 ? editSelectedMedia[0].type : editMediaType;
+
+      await updateDoc(doc(db, "website_banners", banner.id), {
+        imageUrl: newImageUrl,
+        title: editTitle,
+        subtitle: editSubtitle,
+        buttonText: editButtonText,
+        buttonLink: editButtonLink,
+        endDate: editEndDate || null,
+        mediaType: newMediaType,
+      });
+
+      toast.success("Banner updated successfully!");
+      setEditingId(null);
+      setEditSelectedMedia([]);
+      fetchBanners();
+    } catch (error) {
+      console.error("Error updating banner:", error);
+      toast.error("Failed to update banner");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -134,17 +183,12 @@ export default function BannerManager() {
     if (newIndex < 0 || newIndex >= banners.length) return;
 
     const newBanners = [...banners];
-    
-    // Swap order values
     const tempOrder = newBanners[index].order;
     newBanners[index].order = newBanners[newIndex].order;
     newBanners[newIndex].order = tempOrder;
-
-    // Swap in array for immediate UI update
     const temp = newBanners[index];
     newBanners[index] = newBanners[newIndex];
     newBanners[newIndex] = temp;
-    
     setBanners(newBanners);
 
     try {
@@ -163,6 +207,7 @@ export default function BannerManager() {
         <p className="text-gray-500 mt-1">Manage the slideshow banners on the homepage.</p>
       </div>
 
+      {/* ADD BANNER FORM */}
       <Card>
         <CardHeader>
           <CardTitle>Add New Banner</CardTitle>
@@ -172,7 +217,7 @@ export default function BannerManager() {
           <form onSubmit={handleAddBanner} className="space-y-4 max-w-2xl">
             <div className="space-y-2">
               <Label>Page Location (Required)</Label>
-              <select 
+              <select
                 className="w-full border rounded px-3 py-2 bg-white"
                 value={location}
                 onChange={(e) => setLocation(e.target.value as "home" | "darshan" | "goshala")}
@@ -187,42 +232,25 @@ export default function BannerManager() {
               <Label>Banner Media (Required)</Label>
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    variant={mediaType === "image" ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => setMediaType("image")}
-                    className={mediaType === "image" ? "bg-orange-500 hover:bg-orange-600" : ""}
-                  >
+                  <Button type="button" variant={mediaType === "image" ? "default" : "outline"} size="sm"
+                    onClick={() => setMediaType("image")} className={mediaType === "image" ? "bg-orange-500 hover:bg-orange-600" : ""}>
                     Image Banner
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant={mediaType === "video" ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => setMediaType("video")}
-                    className={mediaType === "video" ? "bg-orange-500 hover:bg-orange-600" : ""}
-                  >
+                  <Button type="button" variant={mediaType === "video" ? "default" : "outline"} size="sm"
+                    onClick={() => setMediaType("video")} className={mediaType === "video" ? "bg-orange-500 hover:bg-orange-600" : ""}>
                     Video Banner
                   </Button>
                 </div>
-                
                 <div className="flex-1 space-y-2">
                   <div className="mt-2">
-                    <GalleryPicker 
-                      filterType={mediaType}
-                      onSelect={(items) => {
-                        if (items.length > 0) {
-                          const formatted = items.map(i => ({ 
-                            url: i.url, 
-                            type: (i.type === "video" ? "video" : "image") as "image"|"video"
-                          }));
-                          setSelectedMedia(formatted);
-                          setImageUrl(formatted[0].url);
-                          setMediaType(formatted[0].type);
-                        }
-                      }} 
-                    />
+                    <GalleryPicker filterType={mediaType} onSelect={(items) => {
+                      if (items.length > 0) {
+                        const formatted = items.map(i => ({ url: i.url, type: (i.type === "video" ? "video" : "image") as "image"|"video" }));
+                        setSelectedMedia(formatted);
+                        setImageUrl(formatted[0].url);
+                        setMediaType(formatted[0].type);
+                      }
+                    }} />
                     {selectedMedia.length > 1 && (
                       <p className="text-sm text-blue-600 font-medium mt-2">
                         {selectedMedia.length} files selected (will create {selectedMedia.length} banners)
@@ -230,7 +258,6 @@ export default function BannerManager() {
                     )}
                   </div>
                 </div>
-                
                 <div className="mt-2">
                   {imageUrl && mediaType === "image" && selectedMedia.length <= 1 && (
                     <img src={imageUrl} alt="Preview" className="w-32 h-20 object-cover rounded border" />
@@ -266,12 +293,7 @@ export default function BannerManager() {
 
             <div className="space-y-2">
               <Label>End Date / Expiry (Optional)</Label>
-              <Input 
-                type="date" 
-                value={endDate} 
-                onChange={e => setEndDate(e.target.value)} 
-                className="w-full max-w-xs"
-              />
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full max-w-xs" />
               <p className="text-xs text-gray-500">Banner will automatically hide after this date.</p>
             </div>
 
@@ -280,6 +302,7 @@ export default function BannerManager() {
         </CardContent>
       </Card>
 
+      {/* CURRENT BANNERS LIST */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Current Banners</h2>
         {loading ? (
@@ -289,40 +312,134 @@ export default function BannerManager() {
         ) : (
           <div className="grid gap-4">
             {banners.map((banner, index) => (
-              <Card key={banner.id} className="flex flex-row items-center p-4 gap-4">
-                <div className="flex flex-col gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, -1)} disabled={index === 0}>
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => moveBanner(index, 1)} disabled={index === banners.length - 1}>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {banner.mediaType === "video" ? (
-                  <video src={banner.imageUrl} className="w-48 h-24 object-cover rounded border bg-black" />
-                ) : (
-                  <img src={banner.imageUrl} alt="Banner" className="w-48 h-24 object-cover rounded border" />
-                )}
-                
-                <div className="flex-1">
-                  <div className="flex gap-2 items-center mb-1">
-                    <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded font-semibold uppercase tracking-wider">
-                      {banner.location === "home" ? "Homepage" : banner.location === "darshan" ? "Daily Darshan" : "Goshala"}
-                    </span>
+              <Card key={banner.id} className="overflow-hidden">
+                {/* Banner Row */}
+                <div className="flex flex-row items-center p-4 gap-4">
+                  {/* Order buttons */}
+                  <div className="flex flex-col gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => moveBanner(index, -1)} disabled={index === 0}>
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => moveBanner(index, 1)} disabled={index === banners.length - 1}>
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <h3 className="font-semibold text-lg">{banner.title || "(No Title)"}</h3>
-                  <p className="text-gray-500 text-sm">{banner.subtitle}</p>
-                  {banner.buttonText && (
-                    <div className="mt-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block">
-                      Button: {banner.buttonText} → {banner.buttonLink}
-                    </div>
+
+                  {/* Thumbnail */}
+                  {banner.mediaType === "video" ? (
+                    <video src={banner.imageUrl} className="w-48 h-24 object-cover rounded border bg-black flex-shrink-0" />
+                  ) : (
+                    <img src={banner.imageUrl} alt="Banner" className="w-48 h-24 object-cover rounded border flex-shrink-0" />
                   )}
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <div className="flex gap-2 items-center mb-1">
+                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded font-semibold uppercase tracking-wider">
+                        {banner.location === "home" ? "Homepage" : banner.location === "darshan" ? "Daily Darshan" : "Goshala"}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-lg">{banner.title || "(No Title)"}</h3>
+                    <p className="text-gray-500 text-sm">{banner.subtitle}</p>
+                    {banner.buttonText && (
+                      <div className="mt-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block">
+                        Button: {banner.buttonText} → {banner.buttonLink}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Edit this banner"
+                      onClick={() => editingId === banner.id ? cancelEdit() : startEdit(banner)}
+                      className={editingId === banner.id ? "border-orange-500 text-orange-600" : ""}
+                    >
+                      {editingId === banner.id ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(banner.id, banner.location)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                <Button variant="destructive" size="icon" onClick={() => handleDelete(banner.id)}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {/* Inline Edit Panel */}
+                {editingId === banner.id && (
+                  <div className="border-t bg-orange-50 p-4 space-y-4">
+                    <h4 className="font-semibold text-orange-700 flex items-center gap-2">
+                      <Pencil className="w-4 h-4" /> Edit Banner
+                    </h4>
+
+                    {/* Change Image */}
+                    <div className="space-y-2">
+                      <Label>Change Image / Video</Label>
+                      <div className="flex items-center gap-4">
+                        {/* Current image preview */}
+                        {editMediaType === "video" ? (
+                          <video src={editSelectedMedia.length > 0 ? editSelectedMedia[0].url : editImageUrl}
+                            className="w-32 h-20 object-cover rounded border bg-black flex-shrink-0" />
+                        ) : (
+                          <img src={editSelectedMedia.length > 0 ? editSelectedMedia[0].url : editImageUrl}
+                            alt="Current" className="w-32 h-20 object-cover rounded border flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <GalleryPicker
+                            filterType={editMediaType}
+                            onSelect={(items) => {
+                              if (items.length > 0) {
+                                const formatted = items.map(i => ({ url: i.url, type: (i.type === "video" ? "video" : "image") as "image"|"video" }));
+                                setEditSelectedMedia(formatted);
+                                setEditImageUrl(formatted[0].url);
+                                setEditMediaType(formatted[0].type);
+                              }
+                            }}
+                          />
+                          {editSelectedMedia.length > 0 && (
+                            <p className="text-xs text-green-600 mt-1 font-medium">✅ New image selected — click Save to apply</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Edit fields */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Title</Label>
+                        <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Banner title" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Subtitle</Label>
+                        <Input value={editSubtitle} onChange={e => setEditSubtitle(e.target.value)} placeholder="Banner subtitle" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Button Text</Label>
+                        <Input value={editButtonText} onChange={e => setEditButtonText(e.target.value)} placeholder="e.g. Donate Now" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Button Link</Label>
+                        <Input value={editButtonLink} onChange={e => setEditButtonLink(e.target.value)} placeholder="e.g. /support-us" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>End Date</Label>
+                        <Input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSaveEdit(banner)}
+                        disabled={saving}
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {saving ? "Saving..." : "Save Changes"}
+                      </Button>
+                      <Button variant="outline" onClick={cancelEdit}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
               </Card>
             ))}
           </div>

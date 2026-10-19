@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import { DynamicBanner } from "@/components/DynamicBanner";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import heroImage from "@/assets/hero-temple.jpg";
+import heroImage from "@/assets/hero-temple.jpeg";
 import { Link } from "react-router-dom";
 import { useBranchPrefix } from "@/hooks/useBranchPrefix";
 import ServiceTiles from "@/components/ServiceTiles";
